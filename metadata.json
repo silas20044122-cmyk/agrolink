@@ -1,0 +1,13 @@
+{
+  "name": "AgriLink",
+  "description": "AI-powered agricultural intelligence platform for smallholder farmers in Africa, featuring crop monitoring, disease analysis, market insights, and weather alerts.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "AI Crop Disease Analysis",
+    "Smart Agricultural Advisory",
+    "Real-time Market & Weather Intelligence",
+    "Offline-first Farmer Dashboard"
+  ]
+}
