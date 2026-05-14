@@ -2,13 +2,13 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const SYSTEM_PROMPT = `You are AgriLink AI, an expert agricultural advisor for small-scale farmers in Kenya and Africa. 
+const SYSTEM_PROMPT = `You are AgroLink AI, an expert agricultural advisor for small-scale farmers in Kenya and Africa. 
 You provide advice on crop management, disease control, pest management, soil health, and market strategies.
 Keep your advice practical, localized to East African conditions, and easy to understand for non-technical users.
 Support Swahili (Kiswahili) if the user speaks it.
 Current context: Kenyan Agriculture, Kakamega region focus.`;
 
-export async function getAgriLinkChatStream(message: string, history: { role: 'user' | 'model', parts: [{ text: string }] }[]) {
+export async function getAgroLinkChatStream(message: string, history: { role: 'user' | 'model', parts: [{ text: string }] }[]) {
   const chat = ai.chats.create({
     model: "gemini-3-flash-preview",
     config: {

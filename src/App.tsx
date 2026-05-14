@@ -46,7 +46,7 @@ export default function App() {
           <Sprout className="text-white w-10 h-10" />
         </motion.div>
         <div className="space-y-2 text-center">
-          <p className="text-2xl font-bold font-display text-primary-dark tracking-tight">AgriLink Platform</p>
+          <p className="text-2xl font-bold font-display text-primary-dark tracking-tight">AgroLink Platform</p>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest animate-pulse">Initializing Farm Intelligence...</p>
         </div>
       </div>
@@ -63,7 +63,7 @@ export default function App() {
           <div className="w-10 h-10 bg-primary-dark rounded-xl flex items-center justify-center">
             <Sprout className="text-white w-6 h-6" />
           </div>
-          <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgriLink</span>
+          <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgroLink</span>
         </div>
         <div className="flex gap-4">
            <Button variant="outline" onClick={() => setCurrentPage('solutions')}>Solutions</Button>
@@ -82,7 +82,7 @@ export default function App() {
           <div className="w-10 h-10 bg-primary-dark rounded-xl flex items-center justify-center">
             <Sprout className="text-white w-6 h-6" />
           </div>
-          <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgriLink</span>
+          <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgroLink</span>
         </div>
         <div className="flex gap-4">
            <Button variant="outline" onClick={() => setCurrentPage('about')}>About</Button>
@@ -152,7 +152,7 @@ export default function App() {
                 <div className="w-8 h-8 bg-primary-fresh rounded-lg flex items-center justify-center">
                   <div className="w-4 h-4 bg-white rounded-full"></div>
                 </div>
-                <span className="text-xl font-bold tracking-tight text-primary-dark font-display">AgriLink</span>
+                <span className="text-xl font-bold tracking-tight text-primary-dark font-display">AgroLink</span>
               </div>
               <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-gray-400">
                 <X size={20} />

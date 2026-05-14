@@ -23,7 +23,7 @@ export default function About() {
             Bridging the gap between <span className="text-primary-fresh">traditional farming</span> and <span className="text-accent-amber">AI-driven agriculture</span>.
           </h1>
           <p className="text-lg md:text-xl text-gray-500 font-medium leading-relaxed max-w-2xl">
-            AgriLink is an AI-powered agricultural intelligence platform designed to empower farmers with actionable insights, helping them manage crops, monitor health, and access markets efficiently.
+            AgroLink is an AI-powered agricultural intelligence platform designed to empower farmers with actionable insights, helping them manage crops, monitor health, and access markets efficiently.
           </p>
         </div>
       </section>
@@ -107,7 +107,7 @@ export default function About() {
                 </div>
                 <h4 className="text-2xl font-bold">Trusted Impact</h4>
                 <p className="text-white/60 leading-relaxed font-medium">
-                  AgriLink bridges the gap between traditional farming and modern AI-driven agriculture by providing farmers with actionable insights in one unified platform.
+                  AgroLink bridges the gap between traditional farming and modern AI-driven agriculture by providing farmers with actionable insights in one unified platform.
                 </p>
                 <div className="pt-4 flex flex-wrap gap-4">
                    <div className="px-4 py-2 bg-white/5 rounded-xl text-xs font-bold uppercase tracking-widest">+Yield Efficiency</div>

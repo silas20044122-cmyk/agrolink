@@ -27,7 +27,7 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
             <div className="w-10 h-10 bg-primary-dark rounded-xl flex items-center justify-center">
               <Sprout className="text-white w-6 h-6" />
             </div>
-            <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgriLink</span>
+            <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgroLink</span>
           </div>
           
           <div className="hidden md:flex items-center gap-8 font-medium text-gray-600 tracking-tight">
@@ -72,7 +72,7 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
               Digitizing <span className="text-primary-fresh italic font-serif">Agriculture</span> with Artificial Intelligence.
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl leading-relaxed">
-              AgriLink empowers smallholder farmers in Kenya with AI-driven crop monitoring, disease detection, and real-time market insights. Grow smarter, sell better.
+              AgroLink empowers smallholder farmers in Kenya with AI-driven crop monitoring, disease detection, and real-time market insights. Grow smarter, sell better.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <Button onClick={onStart} size="lg" className="h-16 px-10 text-lg rounded-2xl group">
@@ -113,7 +113,7 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
                 className="w-full h-auto aspect-[4/5] object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/80 to-transparent flex flex-col justify-end p-8 text-white">
-                <p className="text-2xl font-serif italic">"AgriLink saved my maize crop this season with its disease scanner."</p>
+                <p className="text-2xl font-serif italic">"AgroLink saved my maize crop this season with its disease scanner."</p>
                 <p className="mt-2 font-bold">— Mary W., Kakamega County</p>
               </div>
             </div>
@@ -205,7 +205,7 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
       <section className="py-24 px-6 bg-white">
         <div className="max-w-3xl mx-auto text-center space-y-8 bg-primary-fresh/10 p-12 rounded-[3.5rem] border border-primary-fresh/20">
           <h2 className="text-4xl font-bold">Ready to grow your productivity?</h2>
-          <p className="text-gray-600 text-lg">Join thousands of Kenyan farmers using AgriLink today. It's free to start.</p>
+          <p className="text-gray-600 text-lg">Join thousands of Kenyan farmers using AgroLink today. It's free to start.</p>
           <Button onClick={onStart} size="lg" className="h-16 px-12 text-lg rounded-2xl">Create Your Farmer Account</Button>
         </div>
       </section>
@@ -217,9 +217,9 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
             <div className="w-8 h-8 bg-primary-dark rounded-lg flex items-center justify-center">
               <Sprout className="text-white w-4 h-4" />
             </div>
-            <span className="text-xl font-bold font-display tracking-tight text-primary-dark">AgriLink</span>
+            <span className="text-xl font-bold font-display tracking-tight text-primary-dark">AgroLink</span>
           </div>
-          <p className="text-gray-400 text-sm">© 2026 AgriLink AG. Built for Africa. Distributed by Butere Technical Training Institute.</p>
+          <p className="text-gray-400 text-sm">© 2026 AgroLink AG. Built for Africa. Distributed by Butere Technical Training Institute.</p>
           <div className="flex gap-6 text-gray-400">
              <a href="#" className="hover:text-primary-dark text-xs uppercase font-bold tracking-widest">Privacy</a>
              <a href="#" className="hover:text-primary-dark text-xs uppercase font-bold tracking-widest">Terms</a>

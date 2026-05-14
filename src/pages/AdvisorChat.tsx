@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, User, Bot, Sparkles, Plus, Image as ImageIcon, MessageSquare, Trash2, Globe2 } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/components/ui/Base';
-import { getAgriLinkChatStream } from '@/src/services/geminiService';
+import { getAgroLinkChatStream } from '@/src/services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/src/lib/utils';
 
@@ -32,7 +32,7 @@ export default function AdvisorChat() {
         parts: [{ text: m.content }] as [{ text: string }]
       }));
       
-      const stream = await getAgriLinkChatStream(input, history);
+      const stream = await getAgroLinkChatStream(input, history);
       
       let fullResponse = '';
       setMessages(prev => [...prev, { role: 'model', content: '', timestamp: new Date().toISOString() }]);
@@ -97,7 +97,7 @@ export default function AdvisorChat() {
                </div>
                
                <div className="space-y-2">
-                 <h3 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900">Mambo! I am AgriLink AI</h3>
+                 <h3 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900">Mambo! I am AgroLink AI</h3>
                  <p className="text-gray-400 max-w-[240px] md:max-w-sm mx-auto text-xs md:text-sm font-medium leading-relaxed italic">
                    "A friend in agriculture is a friend in life." Ask me anything in Swahili or English.
                  </p>

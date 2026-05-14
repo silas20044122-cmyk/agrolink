@@ -80,7 +80,7 @@ export default function Auth({ onLogin, onRegister, onBack }: { onLogin: () => v
              <div className="w-16 h-16 bg-primary-dark rounded-2xl flex items-center justify-center mx-auto shadow-lg rotate-12">
                <Sprout className="text-white w-8 h-8" />
              </div>
-             <h1 className="text-3xl font-bold tracking-tight">AgriLink Platform</h1>
+             <h1 className="text-3xl font-bold tracking-tight">AgroLink Platform</h1>
              <p className="text-gray-400 text-sm font-medium font-serif italic">Secure Digital Farming Hub for Kenya</p>
           </div>
 
@@ -193,7 +193,7 @@ export default function Auth({ onLogin, onRegister, onBack }: { onLogin: () => v
           </form>
 
           <p className="text-center text-xs text-gray-400 font-medium">
-             By continuing, you agree to AgriLink's <br/>
+             By continuing, you agree to AgroLink's <br/>
              <a href="#" className="text-primary-dark underline">Data Protection Terms</a> & <a href="#" className="text-primary-dark underline">Farm Policy</a>
           </p>
         </Card>
