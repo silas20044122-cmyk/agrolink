@@ -8,31 +8,20 @@ import {
   Camera, 
   MessageSquare, 
   TrendingUp, 
-  Bell, 
-  User, 
-  LogOut,
   MapPin,
   Plus,
   ArrowUpRight,
-  ArrowDownRight,
   Activity,
-  Droplets,
-  Thermometer,
-  Wind,
   Search,
-  Menu,
   ChevronRight,
-  Settings,
-  HelpCircle,
-  Truck,
   ShieldCheck
 } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/components/ui/Base';
-import { useMockAuth, useCrops, useFarms } from '@/src/hooks/useAppData';
-import { cn, formatDate, formatCurrency } from '@/src/lib/utils';
+import { useCrops, useFarms } from '@/src/hooks/useAppData';
+import { cn } from '@/src/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
-export default function Dashboard({ user }: { user: any }) {
+export default function DashboardPage({ user }: { user: any }) {
   const navigate = useNavigate();
   const { farms, loading: farmsLoading } = useFarms(user?.id);
   const { crops, loading: cropsLoading } = useCrops(user?.id);
@@ -41,9 +30,8 @@ export default function Dashboard({ user }: { user: any }) {
   const totalArea = farms.reduce((acc, f) => acc + (parseFloat(f.totalArea) || 0), 0);
   const avgHealth = crops.length > 0 ? Math.round(crops.reduce((acc, c) => acc + (c.healthScore || 0), 0) / crops.length) : 0;
   
-  // Real stats based on the user's data
   const stats = [
-    { id: 'farms', label: 'Active Plots', value: `${farms.length} Farms`, trend: farms.length > 0 ? '+' + farms.length : '0', icon: <Sprout />, color: 'bg-green-100 text-green-600', path: '/farms' },
+    { id: 'farms', label: 'Active Plots', value: `${farms.length} Farms`, trend: farms.length > 0 ? '+' + farms.length : '0', icon: <Sprout />, color: 'bg-green-100 text-green-600', path: '/my-farms' },
     { id: 'productivity', label: 'Total Area', value: `${totalArea.toFixed(1)} Acres`, trend: '+0.5', icon: <Activity />, color: 'bg-blue-100 text-blue-600' },
     { id: 'market', label: 'Estimated Revenue', value: crops.length > 0 ? `KSh ${(crops.length * 45).toFixed(0)}k` : 'KSh 0', trend: '+8.2%', icon: <TrendingUp />, color: 'bg-amber-100 text-amber-600', path: '/market' },
     { id: 'health', label: 'Plant Health', value: crops.length > 0 ? `${avgHealth}/100` : '--/100', trend: crops.length > 0 ? '+2' : '-', icon: <ShieldCheck />, color: 'bg-primary-dark/10 text-primary-dark' },
@@ -97,7 +85,7 @@ export default function Dashboard({ user }: { user: any }) {
         ))}
       </div>
 
-      {/* Top row stats - converted to smaller grid segments */}
+      {/* Top row stats */}
       <Card className="col-span-6 md:col-span-3 p-3 md:p-4 hover:border-primary-fresh/20 transition-all cursor-pointer" onClick={() => navigate('/weather')}>
         <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Local Weather</div>
         <div className="flex justify-between items-center">
@@ -123,7 +111,7 @@ export default function Dashboard({ user }: { user: any }) {
       <Card className="col-span-6 md:col-span-3 p-3 md:p-4">
         <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Maize Yield Exp</div>
         <div className="flex justify-between items-center">
-          <div className="text-lg md:text-2xl font-bold text-secondary-ai">42.8 Bags</div>
+          <div className="text-lg md:text-2xl font-bold text-primary-dark">42.8 Bags</div>
           <div className="text-right text-[10px] md:text-xs text-gray-500 font-bold">+18% vs Ly</div>
         </div>
       </Card>
@@ -149,8 +137,8 @@ export default function Dashboard({ user }: { user: any }) {
              <div className="flex items-center gap-1 md:gap-2 text-[8px] md:text-[10px] uppercase font-bold text-primary-fresh">
                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-fresh"></span> <span className="hidden xs:inline">Market Price</span>
              </div>
-             <div className="flex items-center gap-1 md:gap-2 text-[8px] md:text-[10px] uppercase font-bold text-secondary-ai">
-                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-secondary-ai"></span> <span className="hidden xs:inline">Harvest</span>
+             <div className="flex items-center gap-1 md:gap-2 text-[8px] md:text-[10px] uppercase font-bold text-primary-dark">
+                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-dark"></span> <span className="hidden xs:inline">Harvest</span>
              </div>
           </div>
         </div>
@@ -175,7 +163,7 @@ export default function Dashboard({ user }: { user: any }) {
         </div>
       </Card>
 
-      {/* Right Column: AI Scanner Status/Action */}
+      {/* Right Column: AI Disease Scanner Status */}
       <Card className="col-span-12 lg:col-span-4 bg-primary-dark text-white p-5 md:p-6 shadow-lg flex flex-col min-h-[280px] h-auto lg:h-[400px]">
          <h2 className="font-bold mb-4 flex items-center gap-2 text-sm md:text-base"><Camera size={18} /> AI Disease Scanner</h2>
          <div className="flex-1 border-2 border-dashed border-white/20 rounded-xl mb-4 flex flex-col items-center justify-center p-4 md:p-6 text-center group cursor-pointer hover:bg-white/5 transition-colors" onClick={() => navigate('/scanner')}>
@@ -191,79 +179,10 @@ export default function Dashboard({ user }: { user: any }) {
                   <div className="text-[10px] md:text-xs font-bold truncate">Maize Lethal Necrosis</div>
                   <div className="text-[8px] md:text-[10px] opacity-70">Butere East • 2h ago</div>
                </div>
-               <Badge className="bg-accent-red text-white border-none py-0.5 px-2 text-[8px] normal-case">Critical</Badge>
-            </div>
-            <div className="bg-white/10 p-2 md:p-3 rounded-lg flex items-center gap-3 border border-white/5 opacity-60">
-               <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 rounded-xl shrink-0 flex items-center justify-center"><Sprout size={14} /></div>
-               <div className="flex-1 overflow-hidden">
-                  <div className="text-[10px] md:text-xs font-bold truncate">Fall Armyworm</div>
-                  <div className="text-[8px] md:text-[10px] opacity-70">Butere West • 5h ago</div>
-               </div>
-               <Badge className="bg-accent-amber text-white border-none py-0.5 px-2 text-[8px] normal-case">Warning</Badge>
+               <Badge className="bg-red-500 text-white border-none py-0.5 px-2 text-[8px] normal-case">Critical</Badge>
             </div>
          </div>
          <Button onClick={() => navigate('/scanner')} className="w-full h-10 md:h-12 bg-primary-fresh hover:bg-white hover:text-primary-dark border-none transition-all text-xs font-bold">Launch Scanner</Button>
-      </Card>
-
-      {/* Market Mini-Insights */}
-      <Card className="col-span-12 md:col-span-6 lg:col-span-4 p-4">
-         <h3 className="text-[9px] md:text-[10px] font-bold mb-4 uppercase tracking-wider text-gray-400">Market Insights</h3>
-         <div className="space-y-3">
-            {[
-              { item: 'Dry Maize (90kg Bag)', price: '3,850', change: 'up' },
-              { item: 'Rosecoco Beans (90kg)', price: '13,200', change: 'up' },
-              { item: 'Shangi Potatoes (50kg)', price: '2,900', change: 'down' },
-              { item: 'Sorghum (90kg)', price: '5,400', change: 'neutral' },
-            ].map((m, i) => (
-              <div key={i} className="flex items-center justify-between group cursor-pointer">
-                <div className="text-[10px] md:text-xs font-medium text-gray-600 group-hover:text-primary-dark transition-colors truncate mr-2">{m.item}</div>
-                <div className="text-[10px] md:text-xs font-bold flex items-center gap-1 shrink-0">
-                   KSh {m.price}
-                  {m.change === 'up' && <span className="text-primary-fresh font-black">↑</span>}
-                  {m.change === 'down' && <span className="text-accent-red font-black">↓</span>}
-                  {m.change === 'neutral' && <span className="text-gray-400 font-black">-</span>}
-                </div>
-              </div>
-            ))}
-         </div>
-         <Button variant="ghost" onClick={() => navigate('/market')} className="w-full mt-4 h-8 text-[9px] uppercase tracking-widest font-black">Full Market Board</Button>
-      </Card>
-
-      {/* Tasks Mini-List */}
-      <Card className="col-span-12 md:col-span-6 lg:col-span-4 p-4">
-         <h3 className="text-[9px] md:text-[10px] font-bold mb-4 uppercase tracking-wider text-gray-400">Next Actions</h3>
-         <div className="space-y-3">
-            {[
-               { task: 'Apply Nitrogen', date: 'Tomorrow', color: 'bg-secondary-ai' },
-               { task: 'Irrigation Check', date: 'Thursday', color: 'bg-accent-amber' },
-               { task: 'Harvest Prep', date: 'Oct 12', color: 'bg-primary-fresh' },
-            ].map((t, i) => (
-              <div key={i} className="flex items-center gap-3">
-                 <div className={cn("w-1.5 h-1.5 md:w-2 md:h-2 rounded-full shrink-0", t.color)}></div>
-                 <div className="text-[10px] md:text-xs font-medium text-gray-600 flex-1 truncate">{t.task}</div>
-                 <div className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase">{t.date}</div>
-              </div>
-            ))}
-         </div>
-         <Button variant="ghost" className="w-full mt-4 h-8 text-[9px] uppercase tracking-widest font-black">Calendar</Button>
-      </Card>
-
-      {/* Weather Briefing - Responsive adjustments */}
-      <Card className="col-span-12 md:col-span-12 lg:col-span-4 p-4 flex flex-row lg:flex-col justify-between items-center lg:items-stretch gap-4">
-         <div className="lg:w-full">
-            <div className="flex items-center justify-between mb-2 lg:mb-4">
-               <h3 className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">Forecast</h3>
-               <div className="hidden lg:block text-[9px] font-bold text-primary-fresh uppercase tracking-widest">Next 24h</div>
-            </div>
-            <div className="flex items-center gap-3 md:gap-4">
-               <CloudSun className="text-accent-amber shrink-0" size={28} />
-               <div>
-                  <p className="text-sm md:text-lg font-bold truncate">Partly Sunny</p>
-                  <p className="text-[8px] md:text-[10px] text-gray-400 font-medium">Feels like 26° • 12% Rain</p>
-               </div>
-            </div>
-         </div>
-         <Button variant="outline" onClick={() => navigate('/weather')} className="h-8 md:h-10 lg:w-full lg:mt-4 border-gray-100 text-[9px] uppercase tracking-widest font-black px-4 lg:px-2">Deep Forecast</Button>
       </Card>
     </div>
   );

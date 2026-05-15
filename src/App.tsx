@@ -8,26 +8,38 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Routes, Route, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
-import Dashboard from './pages/Dashboard';
-import MyFarms from './pages/MyFarms';
-import Scanner from './pages/Scanner';
-import AdvisorChat from './pages/AdvisorChat';
-import MarketInsights from './pages/MarketInsights';
-import Weather from './pages/Weather';
-import Logistics from './pages/Logistics';
-import Profile from './pages/Profile';
+import Dashboard from './app/dashboard/page';
+import MyFarms from './app/my-farms/page';
+import FarmDetails from './app/my-farms/[id]/page';
+import Scanner from './app/scanner/page';
+import AdvisorChat from './app/advisor/page';
+import MarketInsights from './app/market/page';
+import Weather from './app/weather/page';
+import Transport from './app/transport/page';
+import Profile from './app/profile/page';
+import SettingsPage from './app/settings/page';
 import About from './pages/About';
 import Solutions from './pages/Solutions';
 import { Badge, Button } from './components/ui/Base';
 import { Bell, User, Settings, LogOut, Menu, X, Sprout, BarChart3, Camera, MessageSquare, CloudSun, TrendingUp, Truck, Sparkles, Plus } from 'lucide-react';
 import { cn } from './lib/utils';
 import { useAuth } from './hooks/useAppData';
+import { useNotifications } from './contexts/NotificationContext';
+import { NotificationPopover } from './components/NotificationPopover';
 
 export default function App() {
   const { user, loading, logout } = useAuth();
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification 
+  } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   useEffect(() => {
     if (user && location.pathname === '/') {
@@ -60,12 +72,13 @@ export default function App() {
 
   const menuItems = [
     { id: 'dashboard', path: '/dashboard', icon: <BarChart3 />, label: 'Dashboard' },
-    { id: 'farms', path: '/farms', icon: <Sprout />, label: 'My Farms' },
+    { id: 'my-farms', path: '/my-farms', icon: <Sprout />, label: 'My Farms' },
     { id: 'scanner', path: '/scanner', icon: <Camera />, label: 'AI Scanner' },
     { id: 'advisor', path: '/advisor', icon: <MessageSquare />, label: 'AI Advisor' },
     { id: 'weather', path: '/weather', icon: <CloudSun />, label: 'Weather Intel' },
     { id: 'market', path: '/market', icon: <TrendingUp />, label: 'Market Prices' },
-    { id: 'logistics', path: '/logistics', icon: <Truck />, label: 'Logistics' },
+    { id: 'transport', path: '/transport', icon: <Truck />, label: 'Transport' },
+    { id: 'settings', path: '/settings', icon: <Settings />, label: 'Settings' },
   ];
 
   const sidebar = (
@@ -154,19 +167,49 @@ export default function App() {
         <h1 className="text-sm md:text-lg font-bold font-display truncate">Regional Intelligence</h1>
       </div>
       
-      <div className="flex items-center gap-2 md:gap-4">
+      <div className="flex items-center gap-2 md:gap-4 relative">
          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-accent-amber/10 text-accent-amber rounded-full text-xs font-bold">
            <span className="w-2 h-2 bg-accent-amber rounded-full animate-pulse" /> Alert: Pests
          </div>
-         <button className="p-2 hover:bg-gray-100 rounded-full transition-colors relative">
+         <button 
+           className={cn(
+             "p-2 hover:bg-gray-100 rounded-full transition-colors relative outline-none",
+             isNotificationsOpen && "bg-gray-100"
+           )}
+           onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+         >
             <Bell size={18} className="text-gray-600" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            )}
          </button>
-         <button onClick={() => navigate('/farms')} className="lg:hidden w-8 h-8 rounded-lg bg-primary-fresh text-white flex items-center justify-center">
+         
+         <AnimatePresence>
+           {isNotificationsOpen && (
+             <>
+               <motion.div 
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 className="fixed inset-0 z-[90]"
+                 onClick={() => setIsNotificationsOpen(false)}
+               />
+               <NotificationPopover 
+                 notifications={notifications}
+                 onMarkAsRead={markAsRead}
+                 onMarkAllAsRead={markAllAsRead}
+                 onDelete={deleteNotification}
+                 onClose={() => setIsNotificationsOpen(false)}
+               />
+             </>
+           )}
+         </AnimatePresence>
+
+         <button onClick={() => navigate('/my-farms')} className="lg:hidden w-8 h-8 rounded-lg bg-primary-fresh text-white flex items-center justify-center">
             <Plus size={16} />
          </button>
          <button 
-          onClick={() => navigate('/farms')}
+          onClick={() => navigate('/my-farms')}
           className="hidden lg:flex px-4 py-2 bg-primary-fresh hover:bg-primary-dark text-white rounded-lg text-sm font-bold items-center gap-2 transition-colors"
         >
            <Plus size={16} /> Add New Farm
@@ -179,7 +222,7 @@ export default function App() {
     <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-100 flex items-center justify-around px-2 shrink-0 z-50 lg:hidden shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] pb-4 md:pb-0">
       {[
         { path: '/dashboard', icon: <BarChart3 />, label: 'Home' },
-        { path: '/farms', icon: <Sprout />, label: 'Farms' },
+        { path: '/my-farms', icon: <Sprout />, label: 'Farms' },
         { path: '/scanner', icon: <Camera />, label: 'Scan' },
         { path: '/advisor', icon: <MessageSquare />, label: 'Talk' },
         { path: '/market', icon: <TrendingUp />, label: 'Prices' },
@@ -282,13 +325,15 @@ export default function App() {
 
       {/* Protected Routes */}
       <Route path="/dashboard" element={<AppShell><Dashboard user={user} /></AppShell>} />
-      <Route path="/farms" element={<AppShell><MyFarms user={user} /></AppShell>} />
+      <Route path="/my-farms" element={<AppShell><MyFarms user={user} /></AppShell>} />
+      <Route path="/my-farms/:id" element={<AppShell><FarmDetails user={user} /></AppShell>} />
       <Route path="/scanner" element={<AppShell><Scanner /></AppShell>} />
-      <Route path="/advisor" element={<AppShell><AdvisorChat /></AppShell>} />
+      <Route path="/advisor" element={<AppShell><AdvisorChat user={user} /></AppShell>} />
       <Route path="/market" element={<AppShell><MarketInsights user={user} /></AppShell>} />
       <Route path="/weather" element={<AppShell><Weather /></AppShell>} />
-      <Route path="/logistics" element={<AppShell><Logistics /></AppShell>} />
+      <Route path="/transport" element={<AppShell><Transport /></AppShell>} />
       <Route path="/profile" element={<AppShell><Profile user={user} onLogout={handleLogout} /></AppShell>} />
+      <Route path="/settings" element={<AppShell><SettingsPage /></AppShell>} />
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

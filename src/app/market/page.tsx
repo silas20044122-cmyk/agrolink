@@ -1,12 +1,12 @@
 import { Card, Badge, Button, Input } from '@/src/components/ui/Base';
-import { TrendingUp, TrendingDown, MapPin, Search, Filter, ArrowUpRight, ArrowDownRight, Info, ShoppingCart, RefreshCcw, X, Plus, Calendar } from 'lucide-react';
+import { TrendingUp, MapPin, Search, Filter, ArrowUpRight, ArrowDownRight, Info, ShoppingCart, RefreshCcw, X, Plus, Calendar, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/src/lib/utils';
 import { useMarketData, useCrops } from '@/src/hooks/useAppData';
 
-export default function MarketInsights({ user }: any) {
+export default function MarketPage({ user }: any) {
   const [activeMarket, setActiveMarket] = useState('Nairobi');
   const { marketPrices, loading } = useMarketData(activeMarket);
   const { crops } = useCrops(user?.id);
@@ -104,12 +104,6 @@ export default function MarketInsights({ user }: any) {
                 </div>
               </Card>
             ))}
-            
-            {marketPrices.length === 0 && !loading && (
-              <div className="text-center py-10 text-gray-400 font-medium">
-                No market data available for this region.
-              </div>
-            )}
           </div>
         </div>
 
@@ -169,21 +163,11 @@ export default function MarketInsights({ user }: any) {
                    <h4 className="font-bold text-sm md:text-base">Advisor Tip</h4>
                  </div>
                  <p className="text-xs md:text-sm font-medium leading-relaxed opacity-90">
-                   Wholesale buyers are prioritizing high-quality, Grade 1 maize with moisture levels below 13.5%.
+                   Wholesale buyers are prioritizing high-quality maize with moisture levels below 13.5%.
                  </p>
                  <Button variant="ghost" className="text-white hover:bg-white/10 p-0 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 h-auto">
                    View Tips <ChevronRight size={14} />
                  </Button>
-              </Card>
-
-              <Card className="p-6 md:p-8 border-dashed border-2 border-gray-100 flex flex-col items-center justify-center text-center space-y-2 md:space-y-4">
-                 <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
-                   <Info size={24} />
-                 </div>
-                 <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Daily Updates</p>
-                 <p className="text-[10px] md:text-xs font-medium text-gray-500 leading-relaxed">
-                   Source: Kenya AFA & Hub Agents.
-                 </p>
               </Card>
            </div>
         </div>
@@ -237,10 +221,9 @@ export default function MarketInsights({ user }: any) {
                        onChange={(e) => setFormData({...formData, cropId: e.target.value})}
                     >
                       <option value="">Choose a crop plot...</option>
-                      {crops.map(crop => (
+                      {crops.map((crop: any) => (
                         <option key={crop.id} value={crop.id}>{crop.name} ({crop.variety})</option>
                       ))}
-                      {crops.length === 0 && <option disabled>No crops found. Register some in My Farms first.</option>}
                     </select>
                   </div>
 
@@ -261,26 +244,9 @@ export default function MarketInsights({ user }: any) {
                        onChange={(e) => setFormData({...formData, price: e.target.value})}
                      />
                   </div>
-
-                  <div className="space-y-1.5 flex flex-col">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Additional Notes</label>
-                    <textarea 
-                       className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-primary-fresh transition-all resize-none h-24"
-                       placeholder="Describe quality, storage, or urgency..."
-                       value={formData.notes}
-                       onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                    />
-                  </div>
                 </div>
 
                 <div className="pt-4 flex flex-col gap-3">
-                  <div className="p-4 bg-bg-soft rounded-2xl flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Market Advantage</p>
-                      <p className="text-xs font-bold text-primary-dark">Prices are +2% higher today</p>
-                    </div>
-                    <TrendingUp className="text-primary-fresh" size={20} />
-                  </div>
                   <Button variant="primary" type="submit" className="w-full h-14 rounded-2xl font-bold" isLoading={isListing}>
                     List on {activeMarket} Market
                   </Button>
@@ -291,13 +257,5 @@ export default function MarketInsights({ user }: any) {
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function ChevronRight(props: any) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m9 18 6-6-6-6" />
-    </svg>
   );
 }

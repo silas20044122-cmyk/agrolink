@@ -22,6 +22,40 @@ export async function getAgroLinkChatStream(message: string, history: { role: 'u
   return chat.sendMessageStream({ message });
 }
 
+export async function generateMarketInsight(region: string = "Kenya") {
+  const prompt = `Generate a concise, high-value agricultural market insight for a farmer in ${region}. 
+  Focus on price trends, demand shifts for common crops (Maize, Tomatoes, Avocado, etc.), or emerging opportunities.
+  Keep it under 30 words.
+  Format: JSON { "title": "...", "insight": "...", "type": "info" | "warning" | "success" }`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          title: { type: "STRING" },
+          insight: { type: "STRING" },
+          type: { type: "STRING", enum: ["info", "warning", "success"] }
+        },
+        required: ["title", "insight", "type"]
+      }
+    }
+  });
+
+  try {
+    return JSON.parse(response.text);
+  } catch (e) {
+    return {
+      title: "Market Shift",
+      insight: "Demand for local farm produce is steadily increasing in urban centers.",
+      type: "info"
+    };
+  }
+}
+
 export async function analyzeCropDisease(imageData: string, mimeType: string) {
   const prompt = `Analyze this crop image. 
 1. Identify the crop.

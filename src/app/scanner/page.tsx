@@ -4,8 +4,10 @@ import { Camera, Upload, RefreshCcw, CheckCircle2, AlertCircle, Info, Sparkles, 
 import { Button, Card, Badge } from '@/src/components/ui/Base';
 import { analyzeCropDisease } from '@/src/services/geminiService';
 import { cn } from '@/src/lib/utils';
+import { useNotifications } from '@/src/contexts/NotificationContext';
 
 export default function Scanner() {
+  const { addNotification } = useNotifications();
   const [image, setImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -67,6 +69,15 @@ export default function Scanner() {
     try {
       const res = await analyzeCropDisease(image, 'image/jpeg');
       setResult(res);
+      
+      const isHealthy = res.healthStatus.toLowerCase().includes('healthy');
+      addNotification({
+        title: isHealthy ? 'Crop Scan Complete' : 'Disease Detected!',
+        message: isHealthy 
+          ? `Analysis of your ${res.cropName} shows it is healthy.`
+          : `Alert: ${res.healthStatus} detected on your ${res.cropName}. Review the treatment plan.`,
+        type: isHealthy ? 'success' : 'warning',
+      });
     } catch (err) {
       setError("AI analysis failed. Please try again with a clearer photo.");
     } finally {
