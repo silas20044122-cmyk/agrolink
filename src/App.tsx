@@ -21,11 +21,12 @@ import SettingsPage from './app/settings/page';
 import About from './pages/About';
 import Solutions from './pages/Solutions';
 import { Badge, Button } from './components/ui/Base';
-import { Bell, User, Settings, LogOut, Menu, X, Sprout, BarChart3, Camera, MessageSquare, CloudSun, TrendingUp, Truck, Sparkles, Plus } from 'lucide-react';
+import { Bell, User, Settings, LogOut, Menu, X, Sprout, BarChart3, Camera, MessageSquare, CloudSun, TrendingUp, Truck, Sparkles, Plus, Search } from 'lucide-react';
 import { cn } from './lib/utils';
 import { useAuth } from './hooks/useAppData';
 import { useNotifications } from './contexts/NotificationContext';
 import { NotificationPopover } from './components/NotificationPopover';
+import GlobalSearch from './components/GlobalSearch';
 
 export default function App() {
   const { user, loading, logout } = useAuth();
@@ -40,6 +41,18 @@ export default function App() {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (user && location.pathname === '/') {
@@ -95,6 +108,19 @@ export default function App() {
         </Link>
         <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-gray-400">
           <X size={20} />
+        </button>
+      </div>
+
+      <div className="px-4 mb-4">
+        <button 
+          onClick={() => setIsSearchOpen(true)}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-all font-semibold text-sm outline-none border border-gray-100/50"
+        >
+          <Search size={16} />
+          <span className="flex-1 text-left">Search...</span>
+          <div className="flex items-center gap-1 p-1 bg-white rounded-md text-[8px] font-black uppercase tracking-widest px-1.5 border border-gray-100">
+            ⌘ K
+          </div>
         </button>
       </div>
 
@@ -168,6 +194,12 @@ export default function App() {
       </div>
       
       <div className="flex items-center gap-2 md:gap-4 relative">
+         <button 
+           className="hidden md:flex p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600 outline-none"
+           onClick={() => setIsSearchOpen(true)}
+         >
+           <Search size={18} />
+         </button>
          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-accent-amber/10 text-accent-amber rounded-full text-xs font-bold">
            <span className="w-2 h-2 bg-accent-amber rounded-full animate-pulse" /> Alert: Pests
          </div>
@@ -250,6 +282,11 @@ export default function App() {
   const AppShell = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen bg-bg-soft flex flex-col lg:flex-row overflow-hidden">
       {sidebar}
+      <GlobalSearch 
+        isOpen={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)} 
+        userId={user?.id}
+      />
       <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
         {mainHeader}
         <div className="flex-1 overflow-y-auto bg-bg-soft relative no-scrollbar">
@@ -324,14 +361,14 @@ export default function App() {
       } />
 
       {/* Protected Routes */}
-      <Route path="/dashboard" element={<AppShell><Dashboard user={user} /></AppShell>} />
+      <Route path="/dashboard" element={<AppShell><Dashboard user={user} onSearchClick={() => setIsSearchOpen(true)} /></AppShell>} />
       <Route path="/my-farms" element={<AppShell><MyFarms user={user} /></AppShell>} />
       <Route path="/my-farms/:id" element={<AppShell><FarmDetails user={user} /></AppShell>} />
       <Route path="/scanner" element={<AppShell><Scanner /></AppShell>} />
       <Route path="/advisor" element={<AppShell><AdvisorChat user={user} /></AppShell>} />
       <Route path="/market" element={<AppShell><MarketInsights user={user} /></AppShell>} />
       <Route path="/weather" element={<AppShell><Weather /></AppShell>} />
-      <Route path="/transport" element={<AppShell><Transport /></AppShell>} />
+      <Route path="/transport" element={<AppShell><Transport user={user} /></AppShell>} />
       <Route path="/profile" element={<AppShell><Profile user={user} onLogout={handleLogout} /></AppShell>} />
       <Route path="/settings" element={<AppShell><SettingsPage /></AppShell>} />
       

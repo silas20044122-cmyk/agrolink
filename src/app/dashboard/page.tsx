@@ -21,7 +21,7 @@ import { useCrops, useFarms } from '@/src/hooks/useAppData';
 import { cn } from '@/src/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
-export default function DashboardPage({ user }: { user: any }) {
+export default function DashboardPage({ user, onSearchClick }: { user: any, onSearchClick?: () => void }) {
   const navigate = useNavigate();
   const { farms, loading: farmsLoading } = useFarms(user?.id);
   const { crops, loading: cropsLoading } = useCrops(user?.id);
@@ -51,12 +51,13 @@ export default function DashboardPage({ user }: { user: any }) {
     <div className="p-3 md:p-6 pb-24 grid grid-cols-12 gap-3 md:gap-4 max-w-full">
       {/* Search Bar - Mobile Focus */}
       <div className="col-span-12 md:hidden mb-2">
-         <div className="relative">
+         <div className="relative" onClick={onSearchClick}>
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
+              readOnly
               type="text" 
               placeholder="Search farms or crops..." 
-              className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-primary-fresh transition-all outline-none text-sm font-medium"
+              className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-primary-fresh transition-all outline-none text-sm font-medium cursor-pointer"
             />
          </div>
       </div>

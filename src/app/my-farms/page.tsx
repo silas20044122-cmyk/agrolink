@@ -33,7 +33,6 @@ export default function MyFarmsPage({ user }: any) {
     const result = await addFarm({
       ...farmFormData,
       registrationDate: new Date().toISOString().split('T')[0],
-      crops: [],
     });
     if (result) {
       setShowAddFarmModal(false);

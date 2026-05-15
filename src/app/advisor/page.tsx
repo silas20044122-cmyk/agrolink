@@ -7,6 +7,7 @@ import { useFarms, useCrops } from '@/src/hooks/useAppData';
 import { CROP_TYPES } from '@/src/lib/constants';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/src/lib/utils';
+import TypingIndicator from '@/src/components/chat/TypingIndicator';
 
 export default function AdvisorPage({ user }: any) {
   const { farms } = useFarms(user?.id);
@@ -26,11 +27,24 @@ export default function AdvisorPage({ user }: any) {
     return `User: ${user.name}, Region: ${user.region}\nFarms:\n${farmInfo}\nCrops:\n${cropInfo}`;
   }, [user, farms, crops]);
 
+  const suggestedQuestions = [
+    { label: "Best crops for my region?", icon: "🌍" },
+    { label: "How to treat Maize Lethal Necrosis?", icon: "🌽" },
+    { label: "Current market prices in Nairobi?", icon: "📈" },
+    { label: "Optimal irrigation for tomatoes?", icon: "💧" },
+  ];
+
+  const handleSuggestionClick = (question: string) => {
+    setInput(question);
+    // Use a small timeout to allow state to update before sending if we want to auto-send
+    // For now, let's just populate the input so the user can see it
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -47,6 +61,10 @@ export default function AdvisorPage({ user }: any) {
       
       const stream = await getAgroLinkChatStream(input, history, farmerContext);
       let fullResponse = '';
+      
+      // We don't add the model message immediately here if we want a separate typing state, 
+      // but the current logic adds it and then updates it. 
+      // Let's keep the logic but show the loader if content is empty.
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
       for await (const chunk of stream) {
@@ -76,25 +94,59 @@ export default function AdvisorPage({ user }: any) {
       </header>
 
       <Card className="flex-1 overflow-hidden flex flex-col border-none shadow-2xl bg-white rounded-[2.5rem]">
-         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-gray-50/20 no-scrollbar">
+         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-gray-50/20 no-scrollbar pb-12">
            {messages.length === 0 && (
-             <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
-               <Sparkles size={48} className="text-primary-fresh opacity-20" />
-               <p className="text-sm text-gray-400 font-medium max-w-xs">Ask me about crop health, market shifts, or irrigation strategies.</p>
-             </div>
-           )}
-           {messages.map((m, i) => (
-             <div key={i} className={cn("flex items-start gap-4", m.role === 'user' ? "flex-row-reverse" : "flex-row")}>
-               <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", m.role === 'user' ? "bg-primary-dark text-white" : "bg-white text-primary-fresh border border-gray-100")}>
-                 {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
-               </div>
-               <div className={cn("max-w-[80%] p-6 shadow-sm rounded-[2rem]", m.role === 'user' ? "bg-primary-fresh text-white rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none border border-gray-100")}>
-                 <div className="markdown-body text-sm leading-relaxed">
-                   <ReactMarkdown>{m.content}</ReactMarkdown>
+             <motion.div 
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="h-full flex flex-col items-center justify-center text-center space-y-8"
+             >
+               <div className="space-y-4">
+                 <div className="w-20 h-20 bg-primary-fresh/10 rounded-[2rem] flex items-center justify-center text-primary-fresh mx-auto">
+                    <Sparkles size={40} className="opacity-40" />
                  </div>
+                 <p className="text-sm text-gray-400 font-medium max-w-xs">Ask me about crop health, market shifts, or irrigation strategies.</p>
                </div>
-             </div>
-           ))}
+
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md px-4">
+                 {suggestedQuestions.map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSuggestionClick(q.label)}
+                      className="p-4 bg-white border border-gray-100 rounded-2xl text-left hover:border-primary-fresh hover:shadow-md transition-all group flex items-start gap-3"
+                    >
+                      <span className="text-xl">{q.icon}</span>
+                      <span className="text-xs font-bold text-primary-dark group-hover:text-primary-fresh transition-colors leading-tight">{q.label}</span>
+                    </button>
+                 ))}
+               </div>
+             </motion.div>
+           )}
+           
+           <AnimatePresence initial={false}>
+             {messages.map((m, i) => (
+               <motion.div 
+                 key={i} 
+                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                 animate={{ opacity: 1, y: 0, scale: 1 }}
+                 transition={{ duration: 0.3 }}
+                 className={cn("flex items-start gap-4", m.role === 'user' ? "flex-row-reverse" : "flex-row")}
+               >
+                 <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", m.role === 'user' ? "bg-primary-dark text-white" : "bg-white text-primary-fresh border border-gray-100")}>
+                   {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+                 </div>
+                 <div className={cn("max-w-[85%] sm:max-w-[80%] p-6 shadow-sm rounded-[2rem]", m.role === 'user' ? "bg-primary-fresh text-white rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none border border-gray-100")}>
+                   <div className="markdown-body text-sm leading-relaxed min-h-[1.25rem]">
+                     {m.role === 'model' && m.content === '' ? (
+                       <TypingIndicator />
+                     ) : (
+                       <ReactMarkdown>{m.content}</ReactMarkdown>
+                     )}
+                   </div>
+                 </div>
+               </motion.div>
+             ))}
+           </AnimatePresence>
          </div>
 
          <div className="p-6 md:p-8 bg-white border-t border-gray-50">
@@ -102,12 +154,17 @@ export default function AdvisorPage({ user }: any) {
              <textarea 
                rows={1}
                value={input}
+               disabled={isLoading}
                onChange={(e) => setInput(e.target.value)}
                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-               placeholder="Ask for advice..."
-               className="w-full pl-5 pr-14 py-4 bg-gray-50 border-none rounded-[1.75rem] outline-none resize-none text-sm font-medium"
+               placeholder={isLoading ? "AI is thinking..." : "Ask for advice..."}
+               className="w-full pl-5 pr-14 py-4 bg-gray-50 border-none rounded-[1.75rem] outline-none resize-none text-sm font-medium disabled:opacity-50"
              />
-             <button onClick={handleSend} disabled={!input.trim() || isLoading} className="absolute right-1.5 bottom-1.5 p-3.5 bg-primary-dark text-white rounded-2xl disabled:opacity-30">
+             <button 
+               onClick={handleSend} 
+               disabled={!input.trim() || isLoading} 
+               className="absolute right-1.5 bottom-1.5 p-3.5 bg-primary-dark text-white rounded-2xl disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+             >
                <Send size={18} />
              </button>
            </div>

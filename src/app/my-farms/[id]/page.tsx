@@ -240,7 +240,7 @@ function CropCard({ crop, onClick }: { crop: any, onClick: () => void }) {
             <div className="h-full bg-primary-fresh rounded-full" style={{ width: `${crop.healthScore}%` }} />
          </div>
          <div className="flex justify-between pt-4 border-t border-gray-50 items-center">
-            <Badge variant="outline" className="text-[9px] font-bold uppercase border-gray-100 text-gray-400 tracking-widest">{crop.area}</Badge>
+            <Badge variant="default" className="text-[9px] font-bold uppercase bg-gray-50 border border-gray-100 text-gray-400 tracking-widest">{crop.area}</Badge>
             <Clock size={16} className="text-gray-200" />
          </div>
       </div>

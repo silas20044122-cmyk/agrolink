@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserProfile, Farm, Crop, Notification, MarketPrice } from '../types';
+import { UserProfile, Farm, Crop, Notification, MarketPrice, TransportRequest, Transporter, SharedDeliveryGroup } from '../types';
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -267,4 +267,107 @@ export function useMarketData(region: string) {
   }, [region]);
 
   return { marketPrices, loading };
+}
+
+export function useTransport(userId: string | undefined) {
+  const [requests, setRequests] = useState<TransportRequest[]>([]);
+  const [transporters, setTransporters] = useState<Transporter[]>([]);
+  const [sharedGroups, setSharedGroups] = useState<SharedDeliveryGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTransportData = async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Fetch Requests
+      const { data: reqData, error: reqError } = await supabase
+        .from('transport_requests')
+        .select('*')
+        .eq('farmerId', userId)
+        .order('createdAt', { ascending: false });
+
+      if (!reqError && reqData) setRequests(reqData);
+
+      // Fetch Transporters (nearby or all for demo)
+      const { data: transData, error: transError } = await supabase
+        .from('transporters')
+        .select('*')
+        .limit(10);
+
+      if (!transError && transData) setTransporters(transData);
+      else {
+        // Mock fallback if table empty
+        setTransporters([
+          { id: 't1', name: 'Otieno Logistics', phone: '+254711223344', vehicleType: 'Truck', maxCapacity: '5 Tons', currentLocation: 'Kakamega', available: true, createdAt: new Date().toISOString(), rating: 4.8 },
+          { id: 't2', name: 'Mumias Express', phone: '+254722334455', vehicleType: 'Pickup', maxCapacity: '1 Ton', currentLocation: 'Mumias', available: true, createdAt: new Date().toISOString(), rating: 4.5 },
+          { id: 't3', name: 'Western Transport', phone: '+254733445566', vehicleType: 'Lorry', maxCapacity: '10 Tons', currentLocation: 'Eldoret', available: true, createdAt: new Date().toISOString(), rating: 4.9 },
+        ]);
+      }
+
+      // Fetch Shared Groups
+      const { data: groupData, error: groupError } = await supabase
+        .from('shared_delivery_groups')
+        .select('*');
+
+      if (!groupError && groupData) setSharedGroups(groupData);
+      else {
+        // Mock fallback
+        setSharedGroups([
+          { id: 'sg1', destination: 'NCPB Kakamega', transportDate: '2024-05-20', estimatedSavings: 3500, status: 'planning', requestIds: [] },
+          { id: 'sg2', destination: 'Kisumu Market', transportDate: '2024-05-21', estimatedSavings: 1200, status: 'planning', requestIds: [] },
+        ]);
+      }
+    } catch (err) {
+      console.error('Error fetching transport data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransportData();
+  }, [userId]);
+
+  const addRequest = async (newRequest: Partial<TransportRequest>) => {
+    try {
+      const { data, error } = await supabase
+        .from('transport_requests')
+        .insert([{ 
+          ...newRequest, 
+          farmerId: userId,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        }])
+        .select();
+
+      if (error) throw error;
+      if (data) setRequests(prev => [data[0], ...prev]);
+      return data?.[0];
+    } catch (err) {
+      console.error('Error adding transport request:', err);
+      return null;
+    }
+  };
+
+  const updateRequestStatus = async (requestId: string, status: TransportRequest['status']) => {
+    try {
+      const { error } = await supabase
+        .from('transport_requests')
+        .update({ status })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status } : r));
+      return true;
+    } catch (err) {
+      console.error('Error updating status:', err);
+      return false;
+    }
+  };
+
+  return { requests, transporters, sharedGroups, loading, addRequest, updateRequestStatus, refresh: fetchTransportData };
 }

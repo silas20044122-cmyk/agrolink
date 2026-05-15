@@ -73,3 +73,41 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
 }
+
+export interface TransportRequest {
+  id: string;
+  farmerId: string;
+  produceType: string;
+  quantity: number;
+  unit: string;
+  pickupLocation: string;
+  destination: string;
+  preferredDate: string;
+  urgency: 'low' | 'medium' | 'high';
+  status: 'pending' | 'matched' | 'scheduled' | 'in-transit' | 'delivered';
+  notes?: string;
+  createdAt: string;
+  estimatedCost?: number;
+  estimatedSavings?: number;
+}
+
+export interface Transporter {
+  id: string;
+  name: string;
+  phone: string;
+  vehicleType: string;
+  maxCapacity: string;
+  currentLocation: string;
+  available: boolean;
+  createdAt: string;
+  rating?: number;
+}
+
+export interface SharedDeliveryGroup {
+  id: string;
+  destination: string;
+  transportDate: string;
+  estimatedSavings: number;
+  status: 'planning' | 'confirmed' | 'completed';
+  requestIds: string[];
+}
