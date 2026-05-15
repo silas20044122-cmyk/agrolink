@@ -74,11 +74,22 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
             <p className="text-xl text-gray-600 max-w-2xl leading-relaxed">
               AgroLink empowers smallholder farmers in Kenya with AI-driven crop monitoring, disease detection, and real-time market insights. Grow smarter, sell better.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Button onClick={onStart} size="lg" className="h-16 px-10 text-lg rounded-2xl group">
-                Launch Dashboard <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+            <div className="flex flex-col sm:flex-row gap-5 justify-center md:justify-start">
+              <Button 
+                onClick={onStart} 
+                size="lg" 
+                className="h-16 px-10 text-lg rounded-2xl group relative overflow-hidden shadow-xl shadow-primary-fresh/20 hover:shadow-primary-fresh/40 transition-all duration-300 transform hover:-translate-y-1"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  Launch Dashboard <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-dark/0 via-white/10 to-primary-dark/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
               </Button>
-              <Button variant="outline" size="lg" className="h-16 px-10 text-lg rounded-2xl bg-white">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="h-16 px-10 text-lg rounded-2xl bg-white/50 backdrop-blur-sm border-gray-200 hover:bg-white hover:border-primary-fresh/30 transition-all duration-300 transform hover:-translate-y-1"
+              >
                 View Demo Video
               </Button>
             </div>

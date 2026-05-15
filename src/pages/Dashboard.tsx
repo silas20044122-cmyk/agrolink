@@ -33,20 +33,20 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function Dashboard({ user, onSetPage }: any) {
   const stats = [
-    { id: 'farms', label: 'Registered Farms', value: '3', trend: '+1', icon: <Sprout />, color: 'bg-green-100 text-green-600' },
-    { id: 'productivity', label: 'Farm Productivity', value: '86%', trend: '+4%', icon: <Activity />, color: 'bg-blue-100 text-blue-600' },
-    { id: 'market', label: 'Market Value', value: 'KSh 142k', trend: '+12%', icon: <TrendingUp />, color: 'bg-amber-100 text-amber-600' },
-    { id: 'health', label: 'Health Score', value: '92/100', trend: '-2', icon: <ShieldCheck />, color: 'bg-primary-dark/10 text-primary-dark' },
+    { id: 'farms', label: 'Active Plots', value: '4.2 Acres', trend: '+0.5', icon: <Sprout />, color: 'bg-green-100 text-green-600' },
+    { id: 'productivity', label: 'Est. Yield', value: '18.4 Tons', trend: '+12%', icon: <Activity />, color: 'bg-blue-100 text-blue-600' },
+    { id: 'market', label: 'Estimated Revenue', value: 'KSh 784k', trend: '+8.2%', icon: <TrendingUp />, color: 'bg-amber-100 text-amber-600' },
+    { id: 'health', label: 'Plant Health', value: '94/100', trend: '+2', icon: <ShieldCheck />, color: 'bg-primary-dark/10 text-primary-dark' },
   ];
 
   const marketData = [
-    { day: 'Mon', prize: 120 },
-    { day: 'Tue', prize: 135 },
-    { day: 'Wed', prize: 132 },
-    { day: 'Thu', prize: 145 },
-    { day: 'Fri', prize: 160 },
-    { day: 'Sat', prize: 155 },
-    { day: 'Sun', prize: 165 },
+    { day: 'Mon', price: 3800, inventory: 45 },
+    { day: 'Tue', price: 3950, inventory: 52 },
+    { day: 'Wed', price: 4100, inventory: 48 },
+    { day: 'Thu', price: 4050, inventory: 60 },
+    { day: 'Fri', price: 4200, inventory: 55 },
+    { day: 'Sat', price: 4350, inventory: 42 },
+    { day: 'Sun', price: 4300, inventory: 38 },
   ];
 
   return (
@@ -100,30 +100,30 @@ export default function Dashboard({ user, onSetPage }: any) {
       </Card>
 
       <Card className="col-span-6 md:col-span-3 p-3 md:p-4">
-        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Soil Health</div>
+        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Soil Nitrogen</div>
         <div className="flex justify-between items-center">
-          <div className="text-lg md:text-2xl font-bold">82/100</div>
-          <div className="text-right text-primary-fresh font-bold text-[10px] md:text-xs text-nowrap">Optimal</div>
+          <div className="text-lg md:text-2xl font-bold">186ppm</div>
+          <div className="text-right text-primary-fresh font-bold text-[10px] md:text-xs text-nowrap">Ideal</div>
         </div>
         <div className="w-full h-1 bg-gray-100 mt-2 md:mt-3 rounded-full overflow-hidden">
-          <motion.div initial={{ width: 0 }} animate={{ width: '82%' }} className="h-full bg-primary-fresh" />
+          <motion.div initial={{ width: 0 }} animate={{ width: '74%' }} className="h-full bg-primary-fresh" />
         </div>
       </Card>
 
       <Card className="col-span-6 md:col-span-3 p-3 md:p-4">
-        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Yield Forecast</div>
+        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Maize Yield Exp</div>
         <div className="flex justify-between items-center">
-          <div className="text-lg md:text-2xl font-bold text-secondary-ai">12.4t</div>
-          <div className="text-right text-[10px] md:text-xs text-gray-500 font-bold">+15%</div>
+          <div className="text-lg md:text-2xl font-bold text-secondary-ai">42.8 Bags</div>
+          <div className="text-right text-[10px] md:text-xs text-gray-500 font-bold">+18% vs Ly</div>
         </div>
       </Card>
 
       <Card className="col-span-6 md:col-span-3 p-3 md:p-4">
-        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Maize Price</div>
+        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Nairobi Market</div>
         <div className="flex justify-between items-center">
-          <div className="text-lg md:text-2xl font-bold">KSh 4.2k</div>
+          <div className="text-lg md:text-2xl font-bold">KSh 3.4k</div>
           <div className="text-right text-[10px] md:text-xs text-primary-fresh font-bold flex items-center gap-0.5 md:gap-1 justify-end">
-             <ArrowUpRight size={10} /> 2.4%
+             <ArrowUpRight size={10} /> 1.8%
           </div>
         </div>
       </Card>
@@ -132,15 +132,15 @@ export default function Dashboard({ user, onSetPage }: any) {
       <Card className="col-span-12 lg:col-span-8 p-4 md:p-6 flex flex-col h-[300px] md:h-[400px]">
         <div className="flex justify-between items-center mb-4 md:mb-6">
           <div>
-             <h2 className="font-bold text-xs md:text-sm">Crop Performance</h2>
-             <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest">Growth vs Irrigation</p>
+             <h2 className="font-bold text-xs md:text-sm">Harvest & Market Performance</h2>
+             <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest">Market Price vs Yield Content</p>
           </div>
           <div className="flex gap-2 md:gap-4 shrink-0">
              <div className="flex items-center gap-1 md:gap-2 text-[8px] md:text-[10px] uppercase font-bold text-primary-fresh">
-               <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-fresh"></span> <span className="hidden xs:inline">Growth</span>
+               <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-fresh"></span> <span className="hidden xs:inline">Market Price</span>
              </div>
              <div className="flex items-center gap-1 md:gap-2 text-[8px] md:text-[10px] uppercase font-bold text-secondary-ai">
-                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-secondary-ai"></span> <span className="hidden xs:inline">Irrigation</span>
+                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-secondary-ai"></span> <span className="hidden xs:inline">Harvest</span>
              </div>
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function Dashboard({ user, onSetPage }: any) {
                  <Tooltip 
                    contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '9px' }}
                  />
-                 <Area type="monotone" dataKey="prize" stroke="#43A047" strokeWidth={2} fillOpacity={1} fill="url(#colorGrowth)" />
+                 <Area type="monotone" dataKey="price" stroke="#43A047" strokeWidth={2} fillOpacity={1} fill="url(#colorGrowth)" />
               </AreaChart>
            </ResponsiveContainer>
         </div>
@@ -175,13 +175,21 @@ export default function Dashboard({ user, onSetPage }: any) {
          </div>
          <div className="space-y-2 mb-2 lg:mb-4">
             <div className="text-[9px] font-bold uppercase tracking-wider opacity-60">Recent History</div>
-            <div className="bg-white/10 p-2 md:p-3 rounded-lg flex items-center gap-3">
-               <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 rounded shrink-0 flex items-center justify-center"><Sprout size={14} /></div>
+            <div className="bg-white/10 p-2 md:p-3 rounded-lg flex items-center gap-3 border border-white/5">
+               <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 rounded-xl shrink-0 flex items-center justify-center"><Sprout size={14} /></div>
                <div className="flex-1 overflow-hidden">
-                  <div className="text-[10px] md:text-xs font-bold truncate">Maize Blight</div>
-                  <div className="text-[8px] md:text-[10px] opacity-70">2h ago</div>
+                  <div className="text-[10px] md:text-xs font-bold truncate">Maize Lethal Necrosis</div>
+                  <div className="text-[8px] md:text-[10px] opacity-70">Butere East • 2h ago</div>
                </div>
-               <Badge className="bg-accent-red text-white border-none py-0.5 px-2 text-[8px] normal-case">High</Badge>
+               <Badge className="bg-accent-red text-white border-none py-0.5 px-2 text-[8px] normal-case">Critical</Badge>
+            </div>
+            <div className="bg-white/10 p-2 md:p-3 rounded-lg flex items-center gap-3 border border-white/5 opacity-60">
+               <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 rounded-xl shrink-0 flex items-center justify-center"><Sprout size={14} /></div>
+               <div className="flex-1 overflow-hidden">
+                  <div className="text-[10px] md:text-xs font-bold truncate">Fall Armyworm</div>
+                  <div className="text-[8px] md:text-[10px] opacity-70">Butere West • 5h ago</div>
+               </div>
+               <Badge className="bg-accent-amber text-white border-none py-0.5 px-2 text-[8px] normal-case">Warning</Badge>
             </div>
          </div>
          <Button onClick={() => onSetPage('scanner')} className="w-full h-10 md:h-12 bg-primary-fresh hover:bg-white hover:text-primary-dark border-none transition-all text-xs font-bold">Launch Scanner</Button>
@@ -192,9 +200,10 @@ export default function Dashboard({ user, onSetPage }: any) {
          <h3 className="text-[9px] md:text-[10px] font-bold mb-4 uppercase tracking-wider text-gray-400">Market Insights</h3>
          <div className="space-y-3">
             {[
-              { item: 'White Maize (90kg)', price: '4,200', change: 'up' },
-              { item: 'Red Beans (90kg)', price: '12,500', change: 'down' },
-              { item: 'Potatoes (Medium)', price: '3,800', change: 'neutral' },
+              { item: 'Dry Maize (90kg Bag)', price: '3,850', change: 'up' },
+              { item: 'Rosecoco Beans (90kg)', price: '13,200', change: 'up' },
+              { item: 'Shangi Potatoes (50kg)', price: '2,900', change: 'down' },
+              { item: 'Sorghum (90kg)', price: '5,400', change: 'neutral' },
             ].map((m, i) => (
               <div key={i} className="flex items-center justify-between group cursor-pointer">
                 <div className="text-[10px] md:text-xs font-medium text-gray-600 group-hover:text-primary-dark transition-colors truncate mr-2">{m.item}</div>
