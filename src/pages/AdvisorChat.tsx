@@ -1,16 +1,45 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, User, Bot, Sparkles, Plus, Image as ImageIcon, MessageSquare, Trash2, Globe2 } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/components/ui/Base';
 import { getAgroLinkChatStream } from '@/src/services/geminiService';
+import { useMockAuth, useFarms, useCrops } from '@/src/hooks/useAppData';
+import { CROP_TYPES } from '@/src/lib/constants';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/src/lib/utils';
 
 export default function AdvisorChat() {
+  const { user } = useMockAuth();
+  const { farms } = useFarms(user?.id);
+  const { crops } = useCrops(user?.id);
+
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Memoize context to avoid re-calculating on every render
+  const farmerContext = useMemo(() => {
+    if (!user) return '';
+
+    const farmInfo = farms.map(f => `- ${f.name} in ${f.location} (${f.county} County), Area: ${f.totalArea}`).join('\n');
+    const cropInfo = crops.map(c => {
+      const icon = CROP_TYPES.find(t => t.id === c.typeId)?.icon || '🌱';
+      return `- ${icon} ${c.name} (${c.variety}) - Status: ${c.status}, Health Score: ${c.healthScore}/100, Planted: ${c.plantingDate}`;
+    }).join('\n');
+    
+    return `
+User Profile: ${user.name}, Region: ${user.region}
+Owned Farms:
+${farmInfo || 'No farms registered yet.'}
+
+Active Crops:
+${cropInfo || 'No crops currently being tracked.'}
+
+Current Date: ${new Date().toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+Note: Use emojis/icons next to crop names in your responses as well (e.g. 🌽 for Maize). If they ask about irrigation and you see they have Maize in a specific region, factor in the typical rainfall there.
+`.trim();
+  }, [user, farms, crops]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -32,7 +61,7 @@ export default function AdvisorChat() {
         parts: [{ text: m.content }] as [{ text: string }]
       }));
       
-      const stream = await getAgroLinkChatStream(input, history);
+      const stream = await getAgroLinkChatStream(input, history, farmerContext);
       
       let fullResponse = '';
       setMessages(prev => [...prev, { role: 'model', content: '', timestamp: new Date().toISOString() }]);
@@ -60,7 +89,7 @@ export default function AdvisorChat() {
 
   return (
     <div className="max-w-4xl mx-auto h-full flex flex-col p-2 md:p-6 pb-28 md:pb-6">
-      <header className="flex items-center justify-between mb-4 md:mb-8 px-2 md:px-1">
+      <header className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-8 px-2 md:px-1 gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 md:w-12 md:h-12 bg-primary-fresh/10 rounded-xl md:rounded-2xl flex items-center justify-center text-primary-fresh shadow-sm">
             <Bot size={24} />
@@ -73,7 +102,21 @@ export default function AdvisorChat() {
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setMessages([])} className="text-gray-300 hover:text-red-500 hover:bg-red-50 w-9 h-9">
+        
+        {crops.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 md:pb-0">
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mr-1 hidden sm:inline">Context:</span>
+            {crops.slice(0, 3).map(c => (
+              <Badge key={c.id} variant="default" className="bg-white/50 backdrop-blur-sm border border-gray-100 flex items-center gap-1.5 py-1 px-3 rounded-full text-[10px] whitespace-nowrap">
+                <span>{CROP_TYPES.find(t => t.id === c.typeId)?.icon || '🌱'}</span>
+                <span className="font-bold text-gray-700">{c.name}</span>
+              </Badge>
+            ))}
+            {crops.length > 3 && <Badge variant="default" className="text-[10px] bg-white/50 border border-gray-100 rounded-full">+{crops.length - 3}</Badge>}
+          </div>
+        )}
+
+        <Button variant="ghost" size="icon" onClick={() => setMessages([])} className="text-gray-300 hover:text-red-500 hover:bg-red-50 w-9 h-9 hidden md:flex">
            <Trash2 size={18} />
         </Button>
       </header>

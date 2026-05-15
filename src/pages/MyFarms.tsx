@@ -218,6 +218,9 @@ export default function MyFarms({ user }: any) {
                    <div className="flex justify-between items-start">
                      <div className="space-y-4">
                         <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-bg-soft rounded-xl flex items-center justify-center text-2xl shadow-inner">
+                            {CROP_TYPES.find(t => t.id === selectedCrop.typeId)?.icon || '🌱'}
+                          </div>
                           <h2 className="text-3xl font-bold tracking-tight">{selectedCrop.name}</h2>
                           <Badge variant={selectedCrop.healthScore > 80 ? "success" : "warning"}>
                             {selectedCrop.healthScore > 80 ? 'Healthy' : 'At Risk'}
@@ -508,7 +511,10 @@ function CropCard({ crop, onClick }: { crop: any, onClick: () => void }) {
       <div className="flex-1 space-y-3">
         <div>
           <Badge variant={crop.status === 'planted' ? 'info' : 'success'} className="mb-2 text-[8px] uppercase tracking-widest">{crop.status}</Badge>
-          <h3 className="text-lg font-bold truncate group-hover:text-primary-fresh transition-colors">{crop.name}</h3>
+          <div className="flex items-center gap-2 group-hover:text-primary-fresh transition-colors">
+            <span className="text-xl">{cropInfo?.icon || '🌱'}</span>
+            <h3 className="text-lg font-bold truncate">{crop.name}</h3>
+          </div>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{crop.variety} • {crop.area}</p>
         </div>
         

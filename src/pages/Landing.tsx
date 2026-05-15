@@ -13,28 +13,30 @@ import {
   X
 } from 'lucide-react';
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/src/components/ui/Base';
 
-export default function Landing({ onStart, onSetPage }: { onStart: () => void, onSetPage: (page: any) => void }) {
+export default function Landing() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-bg-soft">
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSetPage('landing')}>
+          <Link to="/" className="flex items-center gap-2 cursor-pointer">
             <div className="w-10 h-10 bg-primary-dark rounded-xl flex items-center justify-center">
               <Sprout className="text-white w-6 h-6" />
             </div>
             <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgroLink</span>
-          </div>
+          </Link>
           
           <div className="hidden md:flex items-center gap-8 font-medium text-gray-600 tracking-tight">
             <a href="#features" className="hover:text-primary-dark transition-colors">Features</a>
-            <button onClick={() => onSetPage('solutions')} className="hover:text-primary-dark transition-colors">Solutions</button>
-            <button onClick={() => onSetPage('about')} className="hover:text-primary-dark transition-colors">About</button>
-            <Button onClick={onStart} variant="primary" size="md">Get Started</Button>
+            <Link to="/solutions" className="hover:text-primary-dark transition-colors">Solutions</Link>
+            <Link to="/about" className="hover:text-primary-dark transition-colors">About</Link>
+            <Button onClick={() => navigate('/auth')} variant="primary" size="md">Get Started</Button>
           </div>
 
           <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -50,8 +52,9 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
             className="md:hidden bg-white border-b border-gray-100 p-6 space-y-4"
           >
             <a href="#features" className="block text-lg font-medium text-gray-800">Features</a>
-            <a href="#solutions" className="block text-lg font-medium text-gray-800">Solutions</a>
-            <Button onClick={onStart} variant="primary" className="w-full">Get Started</Button>
+            <Link to="/solutions" className="block text-lg font-medium text-gray-800">Solutions</Link>
+            <Link to="/about" className="block text-lg font-medium text-gray-800" onClick={() => setIsMenuOpen(false)}>About</Link>
+            <Button onClick={() => navigate('/auth')} variant="primary" className="w-full">Get Started</Button>
           </motion.div>
         )}
       </nav>
@@ -76,7 +79,7 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
             </p>
             <div className="flex flex-col sm:flex-row gap-5 justify-center md:justify-start">
               <Button 
-                onClick={onStart} 
+                onClick={() => navigate('/auth')} 
                 size="lg" 
                 className="h-16 px-10 text-lg rounded-2xl group relative overflow-hidden shadow-xl shadow-primary-fresh/20 hover:shadow-primary-fresh/40 transition-all duration-300 transform hover:-translate-y-1"
               >
@@ -217,7 +220,7 @@ export default function Landing({ onStart, onSetPage }: { onStart: () => void, o
         <div className="max-w-3xl mx-auto text-center space-y-8 bg-primary-fresh/10 p-12 rounded-[3.5rem] border border-primary-fresh/20">
           <h2 className="text-4xl font-bold">Ready to grow your productivity?</h2>
           <p className="text-gray-600 text-lg">Join thousands of Kenyan farmers using AgroLink today. It's free to start.</p>
-          <Button onClick={onStart} size="lg" className="h-16 px-12 text-lg rounded-2xl">Create Your Farmer Account</Button>
+          <Button onClick={() => navigate('/auth')} size="lg" className="h-16 px-12 text-lg rounded-2xl">Create Your Farmer Account</Button>
         </div>
       </section>
 

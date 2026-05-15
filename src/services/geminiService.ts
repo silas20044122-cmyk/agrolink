@@ -8,11 +8,13 @@ Keep your advice practical, localized to East African conditions, and easy to un
 Support Swahili (Kiswahili) if the user speaks it.
 Current context: Kenyan Agriculture, Kakamega region focus.`;
 
-export async function getAgroLinkChatStream(message: string, history: { role: 'user' | 'model', parts: [{ text: string }] }[]) {
+export async function getAgroLinkChatStream(message: string, history: { role: 'user' | 'model', parts: [{ text: string }] }[], context?: string) {
+  const dynamicPrompt = `${SYSTEM_PROMPT}\n\n${context ? `USER CONTEXT:\n${context}` : ''}`;
+  
   const chat = ai.chats.create({
     model: "gemini-3-flash-preview",
     config: {
-      systemInstruction: SYSTEM_PROMPT,
+      systemInstruction: dynamicPrompt,
     },
     history: history.slice(-10), // Keep last 10 messages for context
   });

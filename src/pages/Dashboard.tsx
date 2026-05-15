@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   CloudSun, 
@@ -31,7 +32,8 @@ import { useMockAuth, useCrops, useFarms } from '@/src/hooks/useAppData';
 import { cn, formatDate, formatCurrency } from '@/src/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
-export default function Dashboard({ user, onSetPage }: any) {
+export default function Dashboard({ user }: { user: any }) {
+  const navigate = useNavigate();
   const { farms, loading: farmsLoading } = useFarms(user?.id);
   const { crops, loading: cropsLoading } = useCrops(user?.id);
 
@@ -41,9 +43,9 @@ export default function Dashboard({ user, onSetPage }: any) {
   
   // Real stats based on the user's data
   const stats = [
-    { id: 'farms', label: 'Active Plots', value: `${farms.length} Farms`, trend: farms.length > 0 ? '+' + farms.length : '0', icon: <Sprout />, color: 'bg-green-100 text-green-600' },
+    { id: 'farms', label: 'Active Plots', value: `${farms.length} Farms`, trend: farms.length > 0 ? '+' + farms.length : '0', icon: <Sprout />, color: 'bg-green-100 text-green-600', path: '/farms' },
     { id: 'productivity', label: 'Total Area', value: `${totalArea.toFixed(1)} Acres`, trend: '+0.5', icon: <Activity />, color: 'bg-blue-100 text-blue-600' },
-    { id: 'market', label: 'Estimated Revenue', value: crops.length > 0 ? `KSh ${(crops.length * 45).toFixed(0)}k` : 'KSh 0', trend: '+8.2%', icon: <TrendingUp />, color: 'bg-amber-100 text-amber-600' },
+    { id: 'market', label: 'Estimated Revenue', value: crops.length > 0 ? `KSh ${(crops.length * 45).toFixed(0)}k` : 'KSh 0', trend: '+8.2%', icon: <TrendingUp />, color: 'bg-amber-100 text-amber-600', path: '/market' },
     { id: 'health', label: 'Plant Health', value: crops.length > 0 ? `${avgHealth}/100` : '--/100', trend: crops.length > 0 ? '+2' : '-', icon: <ShieldCheck />, color: 'bg-primary-dark/10 text-primary-dark' },
   ];
 
@@ -77,7 +79,7 @@ export default function Dashboard({ user, onSetPage }: any) {
           <Card 
             key={stat.id} 
             className="p-4 cursor-pointer hover:border-primary-fresh/20 transition-all group"
-            onClick={() => stat.id === 'farms' ? onSetPage('farms') : stat.id === 'market' ? onSetPage('market') : null}
+            onClick={() => stat.path && navigate(stat.path)}
           >
             <div className="flex items-center justify-between mb-3">
               <div className={cn("p-2 rounded-xl group-hover:scale-110 transition-transform", stat.color)}>
@@ -96,7 +98,7 @@ export default function Dashboard({ user, onSetPage }: any) {
       </div>
 
       {/* Top row stats - converted to smaller grid segments */}
-      <Card className="col-span-6 md:col-span-3 p-3 md:p-4 hover:border-primary-fresh/20 transition-all cursor-pointer" onClick={() => onSetPage('weather')}>
+      <Card className="col-span-6 md:col-span-3 p-3 md:p-4 hover:border-primary-fresh/20 transition-all cursor-pointer" onClick={() => navigate('/weather')}>
         <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Local Weather</div>
         <div className="flex justify-between items-center">
           <div className="text-lg md:text-2xl font-bold">24°C</div>
@@ -176,7 +178,7 @@ export default function Dashboard({ user, onSetPage }: any) {
       {/* Right Column: AI Scanner Status/Action */}
       <Card className="col-span-12 lg:col-span-4 bg-primary-dark text-white p-5 md:p-6 shadow-lg flex flex-col min-h-[280px] h-auto lg:h-[400px]">
          <h2 className="font-bold mb-4 flex items-center gap-2 text-sm md:text-base"><Camera size={18} /> AI Disease Scanner</h2>
-         <div className="flex-1 border-2 border-dashed border-white/20 rounded-xl mb-4 flex flex-col items-center justify-center p-4 md:p-6 text-center group cursor-pointer hover:bg-white/5 transition-colors" onClick={() => onSetPage('scanner')}>
+         <div className="flex-1 border-2 border-dashed border-white/20 rounded-xl mb-4 flex flex-col items-center justify-center p-4 md:p-6 text-center group cursor-pointer hover:bg-white/5 transition-colors" onClick={() => navigate('/scanner')}>
             <div className="text-2xl md:text-3xl mb-2 group-hover:scale-110 transition-transform">📷</div>
             <p className="text-xs md:text-sm font-bold mb-1">Click to Scan Leaf</p>
             <p className="text-[9px] md:text-[10px] opacity-60 font-medium">Auto-detection active</p>
@@ -200,7 +202,7 @@ export default function Dashboard({ user, onSetPage }: any) {
                <Badge className="bg-accent-amber text-white border-none py-0.5 px-2 text-[8px] normal-case">Warning</Badge>
             </div>
          </div>
-         <Button onClick={() => onSetPage('scanner')} className="w-full h-10 md:h-12 bg-primary-fresh hover:bg-white hover:text-primary-dark border-none transition-all text-xs font-bold">Launch Scanner</Button>
+         <Button onClick={() => navigate('/scanner')} className="w-full h-10 md:h-12 bg-primary-fresh hover:bg-white hover:text-primary-dark border-none transition-all text-xs font-bold">Launch Scanner</Button>
       </Card>
 
       {/* Market Mini-Insights */}
@@ -216,7 +218,7 @@ export default function Dashboard({ user, onSetPage }: any) {
               <div key={i} className="flex items-center justify-between group cursor-pointer">
                 <div className="text-[10px] md:text-xs font-medium text-gray-600 group-hover:text-primary-dark transition-colors truncate mr-2">{m.item}</div>
                 <div className="text-[10px] md:text-xs font-bold flex items-center gap-1 shrink-0">
-                  KSh {m.price}
+                   KSh {m.price}
                   {m.change === 'up' && <span className="text-primary-fresh font-black">↑</span>}
                   {m.change === 'down' && <span className="text-accent-red font-black">↓</span>}
                   {m.change === 'neutral' && <span className="text-gray-400 font-black">-</span>}
@@ -224,7 +226,7 @@ export default function Dashboard({ user, onSetPage }: any) {
               </div>
             ))}
          </div>
-         <Button variant="ghost" onClick={() => onSetPage('market')} className="w-full mt-4 h-8 text-[9px] uppercase tracking-widest font-black">Full Market Board</Button>
+         <Button variant="ghost" onClick={() => navigate('/market')} className="w-full mt-4 h-8 text-[9px] uppercase tracking-widest font-black">Full Market Board</Button>
       </Card>
 
       {/* Tasks Mini-List */}
@@ -261,7 +263,7 @@ export default function Dashboard({ user, onSetPage }: any) {
                </div>
             </div>
          </div>
-         <Button variant="outline" onClick={() => onSetPage('weather')} className="h-8 md:h-10 lg:w-full lg:mt-4 border-gray-100 text-[9px] uppercase tracking-widest font-black px-4 lg:px-2">Deep Forecast</Button>
+         <Button variant="outline" onClick={() => navigate('/weather')} className="h-8 md:h-10 lg:w-full lg:mt-4 border-gray-100 text-[9px] uppercase tracking-widest font-black px-4 lg:px-2">Deep Forecast</Button>
       </Card>
     </div>
   );

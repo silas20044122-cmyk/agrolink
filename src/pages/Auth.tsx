@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { Sprout, Mail, Lock, User, AtSign, ArrowRight, ShieldCheck, Phone, ChevronRight } from 'lucide-react';
 import { Button, Input, Card } from '@/src/components/ui/Base';
 import { supabase, isSupabaseConfigured } from '@/src/lib/supabase';
@@ -7,7 +8,7 @@ import { cn } from '@/src/lib/utils';
 import { AlertCircle } from 'lucide-react';
 import { KENYA_COUNTIES } from '@/src/lib/constants';
 
-export default function Auth({ onLogin, onRegister, onBack }: { onLogin: () => void, onRegister: () => void, onBack?: () => void }) {
+export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -16,6 +17,8 @@ export default function Auth({ onLogin, onRegister, onBack }: { onLogin: () => v
   const [region, setRegion] = useState('Nairobi');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +33,7 @@ export default function Auth({ onLogin, onRegister, onBack }: { onLogin: () => v
           password,
         });
         if (signInError) throw signInError;
-        onLogin();
+        navigate('/dashboard');
       } else {
         const { error: signUpError } = await supabase.auth.signUp({
           email,
@@ -45,7 +48,8 @@ export default function Auth({ onLogin, onRegister, onBack }: { onLogin: () => v
         });
         if (signUpError) throw signUpError;
         setMessage('Registration successful! Please check your email for verification.');
-        // If auto-confirm is enabled in Supabase, we might proceed, otherwise wait for email
+        // Navigate after a delay or let user see message
+        setTimeout(() => navigate('/dashboard'), 2000);
       }
     } catch (err: any) {
       setError(err.message || 'An authentication error occurred');
@@ -69,14 +73,12 @@ export default function Auth({ onLogin, onRegister, onBack }: { onLogin: () => v
       >
         <Card className="p-10 shadow-2xl space-y-8 border-none">
           <div className="text-center space-y-3 relative">
-             {onBack && (
-               <button 
-                 onClick={onBack}
-                 className="absolute left-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary-dark transition-colors"
-               >
-                 <ChevronRight className="rotate-180" size={20} />
-               </button>
-             )}
+             <button 
+               onClick={() => navigate('/')}
+               className="absolute left-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary-dark transition-colors"
+             >
+               <ChevronRight className="rotate-180" size={20} />
+             </button>
              <div className="w-16 h-16 bg-primary-dark rounded-2xl flex items-center justify-center mx-auto shadow-lg rotate-12">
                <Sprout className="text-white w-8 h-8" />
              </div>
