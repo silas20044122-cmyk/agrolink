@@ -91,14 +91,8 @@ export function useFarms(userId: string | undefined) {
 
         if (error) throw error;
 
-        if (data && data.length > 0) {
+        if (data) {
           setFarms(data);
-        } else {
-          // Mock data if empty
-          const mockFarms: Farm[] = [
-            { id: 'f1', farmerId: userId, name: 'Western Home Farm', location: 'Butere', totalArea: '5 Acres', county: 'Kakamega', registrationDate: '2026-01-10' },
-          ];
-          setFarms(mockFarms);
         }
       } catch (err) {
         console.error('Error fetching farms:', err);
@@ -155,18 +149,8 @@ export function useCrops(userId: string | undefined, farmId?: string) {
           
         if (error) throw error;
         
-        if (data && data.length > 0) {
+        if (data) {
           setCrops(data);
-        } else {
-          // Fallback to mock if no data in DB yet
-          const mockCrops: Crop[] = [
-            { id: 'c1', farmId: 'f1', farmerId: userId, name: 'Main Maize Plot', variety: 'H614', plantingDate: '2026-03-15', expectedHarvest: '2026-08-20', status: 'healthy', healthScore: 92, location: 'Butere', area: '2 Acres', typeId: 'maize' },
-            { id: 'c2', farmId: 'f1', farmerId: userId, name: 'North Beans Section', variety: 'Rosecoco', plantingDate: '2026-04-10', expectedHarvest: '2026-07-05', status: 'at-risk', healthScore: 65, location: 'Butere', area: '1.5 Acres', typeId: 'beans' },
-            { id: 'c3', farmId: 'f1', farmerId: userId, name: 'Garden Kales', variety: 'Thousand Headed', plantingDate: '2026-05-01', expectedHarvest: '2026-06-15', status: 'planted', healthScore: 85, location: 'Butere', area: '0.2 Acres', typeId: 'kales' },
-          ];
-          // Filter mock by farmId if provided
-          const filteredMock = farmId ? mockCrops.filter(c => c.farmId === farmId) : mockCrops;
-          setCrops(filteredMock);
         }
       } catch (err) {
         console.error('Error fetching crops:', err);

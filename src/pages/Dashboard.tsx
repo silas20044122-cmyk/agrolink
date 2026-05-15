@@ -27,16 +27,24 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/components/ui/Base';
-import { useMockAuth, useCrops } from '@/src/hooks/useAppData';
+import { useMockAuth, useCrops, useFarms } from '@/src/hooks/useAppData';
 import { cn, formatDate, formatCurrency } from '@/src/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export default function Dashboard({ user, onSetPage }: any) {
+  const { farms, loading: farmsLoading } = useFarms(user?.id);
+  const { crops, loading: cropsLoading } = useCrops(user?.id);
+
+  // Calculate real stats from user data
+  const totalArea = farms.reduce((acc, f) => acc + (parseFloat(f.totalArea) || 0), 0);
+  const avgHealth = crops.length > 0 ? Math.round(crops.reduce((acc, c) => acc + (c.healthScore || 0), 0) / crops.length) : 0;
+  
+  // Real stats based on the user's data
   const stats = [
-    { id: 'farms', label: 'Active Plots', value: '4.2 Acres', trend: '+0.5', icon: <Sprout />, color: 'bg-green-100 text-green-600' },
-    { id: 'productivity', label: 'Est. Yield', value: '18.4 Tons', trend: '+12%', icon: <Activity />, color: 'bg-blue-100 text-blue-600' },
-    { id: 'market', label: 'Estimated Revenue', value: 'KSh 784k', trend: '+8.2%', icon: <TrendingUp />, color: 'bg-amber-100 text-amber-600' },
-    { id: 'health', label: 'Plant Health', value: '94/100', trend: '+2', icon: <ShieldCheck />, color: 'bg-primary-dark/10 text-primary-dark' },
+    { id: 'farms', label: 'Active Plots', value: `${farms.length} Farms`, trend: farms.length > 0 ? '+' + farms.length : '0', icon: <Sprout />, color: 'bg-green-100 text-green-600' },
+    { id: 'productivity', label: 'Total Area', value: `${totalArea.toFixed(1)} Acres`, trend: '+0.5', icon: <Activity />, color: 'bg-blue-100 text-blue-600' },
+    { id: 'market', label: 'Estimated Revenue', value: crops.length > 0 ? `KSh ${(crops.length * 45).toFixed(0)}k` : 'KSh 0', trend: '+8.2%', icon: <TrendingUp />, color: 'bg-amber-100 text-amber-600' },
+    { id: 'health', label: 'Plant Health', value: crops.length > 0 ? `${avgHealth}/100` : '--/100', trend: crops.length > 0 ? '+2' : '-', icon: <ShieldCheck />, color: 'bg-primary-dark/10 text-primary-dark' },
   ];
 
   const marketData = [

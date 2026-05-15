@@ -1,13 +1,19 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Card, Badge, Button, Input } from '@/src/components/ui/Base';
-import { Truck, MapPin, Package, Clock, Phone, ChevronRight, Search, Navigation, Info, Plus, Calendar, ArrowRight, X } from 'lucide-react';
+import { Truck, MapPin, Package, Clock, Phone, ChevronRight, Search, Navigation, Info, Plus, Calendar, ArrowRight, X, RefreshCcw } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { useMarketData } from '@/src/hooks/useAppData';
 
 export default function Logistics() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Real-time Estimator state
+  const { marketPrices } = useMarketData('Nairobi');
+  const [bags, setBags] = useState('50');
+  const [selectedCropId, setSelectedCropId] = useState('');
+
   const [bookingForm, setBookingForm] = useState({
     origin: '',
     destination: 'NCPB Kakamega',
@@ -16,6 +22,26 @@ export default function Logistics() {
     pickupDate: new Date().toISOString().split('T')[0],
     pickupTime: '08:00',
   });
+
+  // Calculate Estimator Values in real-time
+  const estimation = useMemo(() => {
+    const bagCount = parseInt(bags) || 0;
+    const selectedCrop = marketPrices.find(p => p.id === selectedCropId) || marketPrices[0];
+    
+    if (!selectedCrop) return { totalValue: 0, transportFee: 0, cropName: '...' };
+
+    const totalValue = bagCount * selectedCrop.pricePerUnit;
+    // Simple logic: 85 KSh per bag for transport
+    const transportFee = bagCount * 85; 
+
+    return {
+      totalValue,
+      transportFee,
+      cropName: selectedCrop.cropName,
+      unit: selectedCrop.unit,
+      rawPrice: selectedCrop.pricePerUnit
+    };
+  }, [bags, selectedCropId, marketPrices]);
 
   const handleBooking = (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,24 +226,57 @@ export default function Logistics() {
               <Button variant="accent" className="w-full h-12 md:h-14 rounded-xl text-[10px] md:text-xs font-bold tracking-widest uppercase">Join Group</Button>
            </Card>
 
-           <Card className="p-6 md:p-8 space-y-4 md:space-y-6 rounded-2xl shadow-sm">
-              <h4 className="font-bold text-base md:text-lg">Quick Estimator</h4>
+           <Card className="p-6 md:p-8 space-y-4 md:space-y-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-base md:text-lg">Quick Estimator</h4>
+                <Badge variant="success" className="text-[8px] uppercase tracking-widest px-2 group">
+                  <RefreshCcw className="w-2 h-2 mr-1 animate-spin-slow group-hover:animate-spin" /> Live Market
+                </Badge>
+              </div>
               <div className="space-y-3 md:space-y-4">
-                 <Input label="Volume (Bags/Crates)" placeholder="e.g. 50" className="h-10 md:h-12 border-gray-100 text-sm" />
                  <div className="space-y-1.5 md:space-y-2">
-                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Route Selection</p>
-                    <select className="w-full h-10 md:h-12 px-3 md:px-4 bg-gray-50 border-none rounded-xl text-xs md:text-sm font-medium outline-none focus:ring-2 focus:ring-primary-fresh">
-                       <option>Butere → Kisumu</option>
-                       <option>Butere → Nairobi</option>
-                       <option>Butere → Kakamega</option>
+                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Select Produce</p>
+                    <select 
+                      className="w-full h-10 md:h-12 px-3 md:px-4 bg-gray-50 border-none rounded-xl text-xs md:text-sm font-medium outline-none focus:ring-2 focus:ring-primary-fresh transition-all"
+                      value={selectedCropId}
+                      onChange={(e) => setSelectedCropId(e.target.value)}
+                    >
+                       {marketPrices.map(p => (
+                         <option key={p.id} value={p.id}>{p.cropName} ({p.unit})</option>
+                       ))}
                     </select>
                  </div>
+                 <Input 
+                   label="Volume (Total Units)" 
+                   placeholder="e.g. 50" 
+                   type="number"
+                   className="h-10 md:h-12 border-gray-100 text-sm" 
+                   value={bags}
+                   onChange={(e) => setBags(e.target.value)}
+                 />
               </div>
-              <div className="pt-3 md:pt-4 border-t border-gray-50 flex items-center justify-between">
-                 <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Est. Cost</p>
-                 <p className="text-lg md:text-xl font-bold text-primary-dark">KSh 3,250</p>
+              
+              <div className="pt-3 md:pt-4 border-t border-gray-50 space-y-3">
+                 <div className="flex items-center justify-between">
+                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Est. Market Value</p>
+                    <div className="text-right">
+                       <p className="text-lg md:text-xl font-bold text-primary-dark">KSh {Math.round(estimation.totalValue).toLocaleString()}</p>
+                       <p className="text-[8px] text-gray-400 font-medium">@ KSh {Math.round(estimation.rawPrice).toLocaleString()} / {estimation.unit}</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center justify-between pb-1">
+                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Est. Logistics Fee</p>
+                    <p className="text-sm font-bold text-gray-600">KSh {Math.round(estimation.transportFee).toLocaleString()}</p>
+                 </div>
               </div>
-              <p className="text-[8px] md:text-[9px] text-gray-400 italic">Includes insurance and fees.</p>
+              <div className="p-3 bg-bg-soft rounded-xl flex items-center gap-3">
+                 <div className="w-6 h-6 rounded-full bg-primary-fresh/20 flex items-center justify-center text-primary-fresh">
+                   <Info size={12} />
+                 </div>
+                 <p className="text-[8px] md:text-[9px] text-gray-500 font-medium leading-tight">
+                   Calculated using current <span className="font-bold text-primary-dark">Nairobi Market</span> averages. Prices refresh every 30s.
+                 </p>
+              </div>
            </Card>
         </div>
       </div>
