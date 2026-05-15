@@ -13,6 +13,7 @@ import MyFarms from './app/my-farms/page';
 import FarmDetails from './app/my-farms/[id]/page';
 import Scanner from './app/scanner/page';
 import AdvisorChat from './app/advisor/page';
+import Community from './app/community/page';
 import MarketInsights from './app/market/page';
 import Weather from './app/weather/page';
 import Transport from './app/transport/page';
@@ -21,7 +22,7 @@ import SettingsPage from './app/settings/page';
 import About from './pages/About';
 import Solutions from './pages/Solutions';
 import { Badge, Button } from './components/ui/Base';
-import { Bell, User, Settings, LogOut, Menu, X, Sprout, BarChart3, Camera, MessageSquare, CloudSun, TrendingUp, Truck, Sparkles, Plus, Search } from 'lucide-react';
+import { Bell, User, Settings, LogOut, Menu, X, Sprout, BarChart3, Camera, MessageSquare, CloudSun, TrendingUp, Truck, Sparkles, Plus, Search, Users } from 'lucide-react';
 import { cn } from './lib/utils';
 import { useAuth } from './hooks/useAppData';
 import { useNotifications } from './contexts/NotificationContext';
@@ -88,6 +89,7 @@ export default function App() {
     { id: 'my-farms', path: '/my-farms', icon: <Sprout />, label: 'My Farms' },
     { id: 'scanner', path: '/scanner', icon: <Camera />, label: 'AI Scanner' },
     { id: 'advisor', path: '/advisor', icon: <MessageSquare />, label: 'AI Advisor' },
+    { id: 'community', path: '/community', icon: <Users />, label: 'Community' },
     { id: 'weather', path: '/weather', icon: <CloudSun />, label: 'Weather Intel' },
     { id: 'market', path: '/market', icon: <TrendingUp />, label: 'Market Prices' },
     { id: 'transport', path: '/transport', icon: <Truck />, label: 'Transport' },
@@ -255,9 +257,9 @@ export default function App() {
       {[
         { path: '/dashboard', icon: <BarChart3 />, label: 'Home' },
         { path: '/my-farms', icon: <Sprout />, label: 'Farms' },
-        { path: '/scanner', icon: <Camera />, label: 'Scan' },
+        { path: '/community', icon: <Users />, label: 'Group' },
         { path: '/advisor', icon: <MessageSquare />, label: 'Talk' },
-        { path: '/market', icon: <TrendingUp />, label: 'Prices' },
+        { path: '/scanner', icon: <Camera />, label: 'Scan' },
       ].map((item) => (
         <button
           key={item.path}
@@ -366,6 +368,7 @@ export default function App() {
       <Route path="/my-farms/:id" element={<AppShell><FarmDetails user={user} /></AppShell>} />
       <Route path="/scanner" element={<AppShell><Scanner /></AppShell>} />
       <Route path="/advisor" element={<AppShell><AdvisorChat user={user} /></AppShell>} />
+      <Route path="/community" element={<AppShell><Community /></AppShell>} />
       <Route path="/market" element={<AppShell><MarketInsights user={user} /></AppShell>} />
       <Route path="/weather" element={<AppShell><Weather /></AppShell>} />
       <Route path="/transport" element={<AppShell><Transport user={user} /></AppShell>} />

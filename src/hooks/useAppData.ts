@@ -27,6 +27,17 @@ export function useAuth() {
           avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`
         };
         setUser(profile);
+
+        // Sync with farmer_profiles
+        supabase.from('farmer_profiles').upsert({
+          id: session.user.id,
+          displayName: profile.name,
+          avatarUrl: profile.avatarUrl,
+          location: profile.region,
+          updatedAt: new Date().toISOString()
+        }).then(({ error }) => {
+           if (error) console.error('Error syncing profile:', error);
+        });
       }
       setLoading(false);
     });
@@ -43,6 +54,17 @@ export function useAuth() {
           avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`
         };
         setUser(profile);
+
+        // Sync with farmer_profiles
+        supabase.from('farmer_profiles').upsert({
+          id: session.user.id,
+          displayName: profile.name,
+          avatarUrl: profile.avatarUrl,
+          location: profile.region,
+          updatedAt: new Date().toISOString()
+        }).then(({ error }) => {
+           if (error) console.error('Error syncing profile:', error);
+        });
       } else {
         setUser(null);
       }
@@ -283,46 +305,82 @@ export function useTransport(userId: string | undefined) {
 
     setLoading(true);
     try {
-      // Fetch Requests
+      // 1. Fetch User's Requests
       const { data: reqData, error: reqError } = await supabase
         .from('transport_requests')
         .select('*')
         .eq('farmerId', userId)
         .order('createdAt', { ascending: false });
 
-      if (!reqError && reqData) setRequests(reqData);
+      if (!reqError && reqData) {
+        setRequests(reqData);
+      } else if (reqError) {
+        console.error('Error fetching transport requests:', reqError);
+      }
 
-      // Fetch Transporters (nearby or all for demo)
+      // 2. Fetch Available Transporters
       const { data: transData, error: transError } = await supabase
         .from('transporters')
         .select('*')
+        .eq('available', true)
+        .order('rating', { ascending: false })
         .limit(10);
 
-      if (!transError && transData) setTransporters(transData);
-      else {
-        // Mock fallback if table empty
-        setTransporters([
-          { id: 't1', name: 'Otieno Logistics', phone: '+254711223344', vehicleType: 'Truck', maxCapacity: '5 Tons', currentLocation: 'Kakamega', available: true, createdAt: new Date().toISOString(), rating: 4.8 },
-          { id: 't2', name: 'Mumias Express', phone: '+254722334455', vehicleType: 'Pickup', maxCapacity: '1 Ton', currentLocation: 'Mumias', available: true, createdAt: new Date().toISOString(), rating: 4.5 },
-          { id: 't3', name: 'Western Transport', phone: '+254733445566', vehicleType: 'Lorry', maxCapacity: '10 Tons', currentLocation: 'Eldoret', available: true, createdAt: new Date().toISOString(), rating: 4.9 },
-        ]);
+      if (!transError && transData && transData.length > 0) {
+        setTransporters(transData);
+      } else {
+        if (transError) console.error('Error fetching transporters:', transError);
       }
 
-      // Fetch Shared Groups
+      // 3. Fetch Shared Delivery Groups
       const { data: groupData, error: groupError } = await supabase
         .from('shared_delivery_groups')
-        .select('*');
+        .select('*')
+        .order('transportDate', { ascending: true });
 
-      if (!groupError && groupData) setSharedGroups(groupData);
-      else {
-        // Mock fallback
-        setSharedGroups([
-          { id: 'sg1', destination: 'NCPB Kakamega', transportDate: '2024-05-20', estimatedSavings: 3500, status: 'planning', requestIds: [] },
-          { id: 'sg2', destination: 'Kisumu Market', transportDate: '2024-05-21', estimatedSavings: 1200, status: 'planning', requestIds: [] },
-        ]);
+      if (!groupError && groupData) {
+        // Fetch members for each group
+        const groupsWithMembers = await Promise.all(groupData.map(async (group) => {
+          const { data: memberData } = await supabase
+            .from('shared_delivery_group_members')
+            .select('*, author:farmer_profiles(*)')
+            .eq('groupId', group.id);
+          
+          return {
+            ...group,
+            members: memberData?.map(m => ({
+              id: m.id,
+              groupId: m.groupId,
+              requestId: m.requestId,
+              farmerId: m.farmerId,
+              farmerName: m.author?.displayName || 'Unknown Farmer',
+              avatarUrl: m.author?.avatarUrl
+            })) || []
+          };
+        }));
+        
+        if (groupsWithMembers.length > 0) {
+          setSharedGroups(groupsWithMembers);
+        } else {
+          // No groups in DB, let's create one for the demo
+          const { data: newGroup } = await supabase
+            .from('shared_delivery_groups')
+            .insert({
+              destination: 'NCPB Kakamega',
+              transportDate: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
+              estimatedSavings: 3500,
+              status: 'planning'
+            })
+            .select()
+            .single();
+          
+          if (newGroup) setSharedGroups([newGroup]);
+        }
+      } else {
+         if (groupError) console.error('Error fetching delivery groups:', groupError);
       }
     } catch (err) {
-      console.error('Error fetching transport data:', err);
+      console.error('Error in fetchTransportData:', err);
     } finally {
       setLoading(false);
     }

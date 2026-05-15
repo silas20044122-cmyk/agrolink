@@ -196,10 +196,30 @@ export default function TransportPage({ user }: { user: UserProfile }) {
                   <Card key={group.id} className="p-8 bg-gradient-to-br from-primary-dark to-primary-dark/90 text-white border-none rounded-[2.5rem] relative overflow-hidden shadow-2xl">
                      <div className="absolute -top-4 -right-4 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
                      <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-white/10 rounded-2xl">
-                           <Users size={20} className="text-primary-fresh" />
+                        <div className="flex -space-x-3 overflow-hidden">
+                           {(group.members && group.members.length > 0) ? (
+                              group.members.map((member, i) => (
+                                 <div key={i} className="inline-block h-10 w-10 rounded-xl ring-4 ring-primary-dark bg-white overflow-hidden border border-white/20 flex items-center justify-center">
+                                    {(member.avatarUrl && (member.avatarUrl.startsWith('http') || member.avatarUrl.includes('/'))) ? (
+                                       <img 
+                                         src={member.avatarUrl} 
+                                         alt={member.farmerName} 
+                                         className="h-full w-full object-cover"
+                                       />
+                                    ) : (
+                                       <span className="text-lg">{member.avatarUrl || '👨‍🌾'}</span>
+                                    )}
+                                 </div>
+                              ))
+                           ) : (
+                              <div className="p-3 bg-white/10 rounded-2xl">
+                                 <Users size={20} className="text-primary-fresh" />
+                              </div>
+                           )}
                         </div>
-                        <Badge variant="success" className="bg-primary-fresh text-primary-dark border-none px-3 font-black text-[9px] uppercase tracking-widest">Highly Optimized</Badge>
+                        <Badge variant="success" className="bg-primary-fresh text-primary-dark border-none px-3 font-black text-[9px] uppercase tracking-widest">
+                           {(group.members?.length || 0) + 1} Farmer{(group.members?.length || 0) !== 0 ? 's' : ''}
+                        </Badge>
                      </div>
                      <div className="space-y-1 mb-8">
                         <h4 className="text-xl font-bold tracking-tight">Group to {group.destination}</h4>

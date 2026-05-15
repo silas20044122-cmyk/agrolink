@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode, useEffect } from 'react';
 import { Notification } from '../types';
 import { generateMarketInsight } from '../services/geminiService';
+import { supabase } from '../lib/supabase';
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -14,69 +15,104 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    title: 'Pest Alert',
-    message: 'Increased Fall Armyworm activity detected in Uasin Gishu region.',
-    type: 'warning',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    read: false,
-  },
-  {
-    id: '2',
-    title: 'Market Update',
-    message: 'Maize prices in Eldoret have increased by 5% today.',
-    type: 'info',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    read: false,
-  },
-  {
-    id: '3',
-    title: 'Weather Warning',
-    message: 'Heavy rainfall expected in your area starting tomorrow. Ensure proper drainage.',
-    type: 'error',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    read: true,
-  },
-  {
-    id: '4',
-    title: 'Harvest Ready',
-    message: 'Your Tomato crop in "North Field" is estimated to be ready for harvest in 3 days.',
-    type: 'success',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-    read: true,
-  },
-];
-
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    const saved = localStorage.getItem('agrolink_notifications');
-    return saved ? JSON.parse(saved) : MOCK_NOTIFICATIONS;
-  });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Sync auth state
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    if (!userId) {
+      setNotifications([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('userId', userId)
+      .order('createdAt', { ascending: false });
+
+    if (!error && data) {
+      setNotifications(data);
+    }
+  }, [userId]);
 
   useEffect(() => {
-    localStorage.setItem('agrolink_notifications', JSON.stringify(notifications));
-  }, [notifications]);
+    fetchNotifications();
+
+    if (!userId) return;
+
+    // Real-time subscription
+    const channel = supabase
+      .channel(`user-notifications-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `userId=eq.${userId}`
+        },
+        (payload) => {
+          setNotifications(prev => [payload.new as Notification, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, fetchNotifications]);
 
   const unreadCount = useMemo(() => 
     notifications.filter(n => !n.read).length, 
   [notifications]);
 
-  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-      read: false,
-    };
-    setNotifications(prev => [newNotification, ...prev]);
-  }, []);
+  const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => {
+    if (!userId) {
+      // Fallback for non-logged in state (AI insights etc)
+      const newNotification: Notification = {
+        ...notification,
+        id: Math.random().toString(36).substr(2, 9),
+        createdAt: new Date().toISOString(),
+        read: false,
+      };
+      setNotifications(prev => [newNotification, ...prev]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        ...notification,
+        userId
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      // Subscription will catch it or we update manually
+      setNotifications(prev => [data, ...prev]);
+    }
+  }, [userId]);
 
   const refreshMarketInsight = useCallback(async () => {
     try {
       const insight = await generateMarketInsight();
-      addNotification({
+      await addNotification({
         title: insight.title,
         message: insight.insight,
         type: insight.type as any,
@@ -87,10 +123,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [addNotification]);
 
-  // Hourly background check
+  // Hourly background check for insights
   useEffect(() => {
-    const ONE_HOUR = 3600000;
+    if (!userId) return;
     
+    const ONE_HOUR = 3600000;
     const checkAndGenerate = async () => {
       const lastInsight = localStorage.getItem('agrolink_last_insight');
       const now = Date.now();
@@ -104,19 +141,39 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const interval = setInterval(checkAndGenerate, 60000); // Check every minute
     
     return () => clearInterval(interval);
-  }, [refreshMarketInsight]);
+  }, [refreshMarketInsight, userId]);
 
-  const markAsRead = useCallback((id: string) => {
+  const markAsRead = useCallback(async (id: string) => {
+    // If it's a UUID, update in DB, else local
+    if (id.length > 20) { 
+      await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', id);
+    }
+    
     setNotifications(prev => prev.map(n => 
       n.id === id ? { ...n, read: true } : n
     ));
   }, []);
 
-  const markAllAsRead = useCallback(() => {
+  const markAllAsRead = useCallback(async () => {
+    if (userId) {
+      await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('userId', userId);
+    }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  }, []);
+  }, [userId]);
 
-  const deleteNotification = useCallback((id: string) => {
+  const deleteNotification = useCallback(async (id: string) => {
+    if (id.length > 20) {
+      await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id);
+    }
     setNotifications(prev => prev.filter(n => n.id !== id));
   }, []);
 

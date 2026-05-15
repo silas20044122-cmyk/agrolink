@@ -109,5 +109,14 @@ export interface SharedDeliveryGroup {
   transportDate: string;
   estimatedSavings: number;
   status: 'planning' | 'confirmed' | 'completed';
-  requestIds: string[];
+  members?: SharedGroupMember[];
+}
+
+export interface SharedGroupMember {
+  id: string;
+  groupId: string;
+  requestId: string;
+  farmerId: string;
+  farmerName?: string;
+  avatarUrl?: string;
 }
