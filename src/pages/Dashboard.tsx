@@ -154,9 +154,9 @@ export default function Dashboard({ user }: { user: any }) {
              </div>
           </div>
         </div>
-        <div className="flex-1 w-full translate-x-[-15px]">
-           <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={marketData}>
+        <div className="flex-1 w-full min-h-[250px] relative">
+           <ResponsiveContainer width="100%" height="100%" debounce={50}>
+              <AreaChart data={marketData} margin={{ left: -20 }}>
                  <defs>
                    <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
                      <stop offset="5%" stopColor="#43A047" stopOpacity={0.2}/>

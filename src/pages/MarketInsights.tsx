@@ -124,9 +124,9 @@ export default function MarketInsights({ user }: any) {
                  <Badge variant="info" className="w-fit">Predicted +4.2%</Badge>
               </div>
 
-              <div className="h-60 md:h-80 w-full translate-x-[-15px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
+              <div className="h-60 md:h-80 w-full relative min-h-[240px]">
+                <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                  <AreaChart data={chartData} margin={{ left: -20 }}>
                     <defs>
                       <linearGradient id="colorPriceMarket" x1="0" y1="1" x2="0" y2="1">
                         <stop offset="5%" stopColor="#1B5E20" stopOpacity={0.2}/>
