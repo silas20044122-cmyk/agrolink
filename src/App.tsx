@@ -29,6 +29,67 @@ import { useNotifications } from './contexts/NotificationContext';
 import { NotificationPopover } from './components/NotificationPopover';
 import GlobalSearch from './components/GlobalSearch';
 
+// Move AppShell outside to maintain stable component identity
+const AppShell = ({ 
+  children, 
+  sidebar, 
+  mainHeader, 
+  bottomNav, 
+  isSidebarOpen, 
+  setIsSidebarOpen, 
+  isSearchOpen, 
+  setIsSearchOpen, 
+  user,
+  location
+}: { 
+  children: React.ReactNode,
+  sidebar: React.ReactNode,
+  mainHeader: React.ReactNode,
+  bottomNav: React.ReactNode,
+  isSidebarOpen: boolean,
+  setIsSidebarOpen: (open: boolean) => void,
+  isSearchOpen: boolean,
+  setIsSearchOpen: (open: boolean) => void,
+  user: any,
+  location: any
+}) => (
+  <div className="min-h-screen bg-bg-soft flex flex-col lg:flex-row overflow-hidden">
+    {sidebar}
+    <GlobalSearch 
+      isOpen={isSearchOpen} 
+      onClose={() => setIsSearchOpen(false)} 
+      userId={user?.id}
+    />
+    <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+      {mainHeader}
+      <div className="flex-1 overflow-y-auto bg-bg-soft relative no-scrollbar">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="h-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      {bottomNav}
+    </main>
+    {isSidebarOpen && (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+        onClick={() => setIsSidebarOpen(false)}
+      />
+    )}
+  </div>
+);
+
 export default function App() {
   const { user, loading, logout } = useAuth();
   const { 
@@ -281,43 +342,6 @@ export default function App() {
     </nav>
   );
 
-  const AppShell = ({ children }: { children: React.ReactNode }) => (
-    <div className="min-h-screen bg-bg-soft flex flex-col lg:flex-row overflow-hidden">
-      {sidebar}
-      <GlobalSearch 
-        isOpen={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)} 
-        userId={user?.id}
-      />
-      <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
-        {mainHeader}
-        <div className="flex-1 overflow-y-auto bg-bg-soft relative no-scrollbar">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="h-full"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        {bottomNav}
-      </main>
-      {isSidebarOpen && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-    </div>
-  );
 
   return (
     <Routes>
@@ -363,17 +387,17 @@ export default function App() {
       } />
 
       {/* Protected Routes */}
-      <Route path="/dashboard" element={<AppShell><Dashboard user={user} onSearchClick={() => setIsSearchOpen(true)} /></AppShell>} />
-      <Route path="/my-farms" element={<AppShell><MyFarms user={user} /></AppShell>} />
-      <Route path="/my-farms/:id" element={<AppShell><FarmDetails user={user} /></AppShell>} />
-      <Route path="/scanner" element={<AppShell><Scanner /></AppShell>} />
-      <Route path="/advisor" element={<AppShell><AdvisorChat user={user} /></AppShell>} />
-      <Route path="/community" element={<AppShell><Community /></AppShell>} />
-      <Route path="/market" element={<AppShell><MarketInsights user={user} /></AppShell>} />
-      <Route path="/weather" element={<AppShell><Weather /></AppShell>} />
-      <Route path="/transport" element={<AppShell><Transport user={user} /></AppShell>} />
-      <Route path="/profile" element={<AppShell><Profile user={user} onLogout={handleLogout} /></AppShell>} />
-      <Route path="/settings" element={<AppShell><SettingsPage /></AppShell>} />
+      <Route path="/dashboard" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Dashboard user={user} onSearchClick={() => setIsSearchOpen(true)} /></AppShell>} />
+      <Route path="/my-farms" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><MyFarms user={user} /></AppShell>} />
+      <Route path="/my-farms/:id" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><FarmDetails user={user} /></AppShell>} />
+      <Route path="/scanner" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Scanner /></AppShell>} />
+      <Route path="/advisor" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><AdvisorChat user={user} /></AppShell>} />
+      <Route path="/community" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Community /></AppShell>} />
+      <Route path="/market" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><MarketInsights user={user} /></AppShell>} />
+      <Route path="/weather" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Weather /></AppShell>} />
+      <Route path="/transport" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Transport user={user} /></AppShell>} />
+      <Route path="/profile" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Profile user={user} onLogout={handleLogout} /></AppShell>} />
+      <Route path="/settings" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><SettingsPage /></AppShell>} />
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
