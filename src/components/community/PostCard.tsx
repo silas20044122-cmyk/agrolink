@@ -19,6 +19,7 @@ export default function PostCard({ post, onLike, userId, onDelete }: PostCardPro
   const [submitting, setSubmitting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const { comments, addComment, loading: commentsLoading } = useComments(post.id, userId);
 
@@ -105,7 +106,7 @@ export default function PostCard({ post, onLike, userId, onDelete }: PostCardPro
           <AnimatePresence>
             {showMenu && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <div className="fixed inset-0 z-10" onClick={() => { setShowMenu(false); setShowDeleteConfirm(false); }} />
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -121,18 +122,39 @@ export default function PostCard({ post, onLike, userId, onDelete }: PostCardPro
                     {copied ? 'Link Copied!' : 'Share Link'}
                   </button>
                   {onDelete && (!isSupabaseConfigured || (userId && (post.authorId === userId || post.author?.id === userId))) && (
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this discussion post?')) {
-                          onDelete();
-                        }
-                        setShowMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-50"
-                    >
-                      <Trash2 size={14} className="text-red-400" />
-                      Delete Post
-                    </button>
+                    <>
+                      {showDeleteConfirm ? (
+                        <div className="px-4 py-2.5 bg-red-50 border-t border-gray-100 flex flex-col gap-1.5 animate-fadeIn">
+                          <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Delete discussion?</span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                onDelete();
+                                setShowDeleteConfirm(false);
+                                setShowMenu(false);
+                              }}
+                              className="flex-1 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-[9px] font-extrabold text-white uppercase tracking-wider transition-colors"
+                            >
+                              Yes, Delete
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm(false)}
+                              className="px-2 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-[9px] font-extrabold text-gray-600 uppercase tracking-wider transition-colors"
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="w-full text-left px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-50"
+                        >
+                          <Trash2 size={14} className="text-red-400" />
+                          Delete Post
+                        </button>
+                      )}
+                    </>
                   )}
                 </motion.div>
               </>

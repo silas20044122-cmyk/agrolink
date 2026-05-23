@@ -20,6 +20,7 @@ export default function ChatWindow({ room, onClose, user }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -157,16 +158,34 @@ export default function ChatWindow({ room, onClose, user }: ChatWindowProps) {
                       {(isMine || !isSupabaseConfigured) && (
                         <>
                           <span>•</span>
-                          <button 
-                            onClick={() => {
-                              if (confirm('Are you sure you want to delete this message?')) {
-                                deleteMessage(m.id);
-                              }
-                            }}
-                            className="text-red-400 hover:text-red-500 hover:underline cursor-pointer lowercase flex items-center gap-0.5 font-bold"
-                          >
-                            delete
-                          </button>
+                          {deletingMessageId === m.id ? (
+                            <span className="flex items-center gap-1.5 bg-red-50/80 px-1.5 py-0.5 rounded-md border border-red-100">
+                              <span className="text-red-600 font-extrabold normal-case">Sure?</span>
+                              <button 
+                                onClick={() => {
+                                  deleteMessage(m.id);
+                                  setDeletingMessageId(null);
+                                }}
+                                className="text-red-700 hover:underline hover:text-red-800 font-black cursor-pointer uppercase text-[8px]"
+                              >
+                                yes
+                              </button>
+                              <span className="text-red-200">/</span>
+                              <button 
+                                onClick={() => setDeletingMessageId(null)}
+                                className="text-gray-500 hover:underline hover:text-gray-650 font-black cursor-pointer uppercase text-[8px]"
+                              >
+                                no
+                              </button>
+                            </span>
+                          ) : (
+                            <button 
+                              onClick={() => setDeletingMessageId(m.id)}
+                              className="text-red-400 hover:text-red-500 hover:underline cursor-pointer lowercase flex items-center gap-0.5 font-bold"
+                            >
+                              delete
+                            </button>
+                          )}
                         </>
                       )}
                    </div>
