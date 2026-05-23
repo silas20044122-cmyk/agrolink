@@ -86,47 +86,6 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
         ))}
       </div>
 
-      {/* Top row stats */}
-      <Card className="col-span-6 md:col-span-3 p-3 md:p-4 hover:border-primary-fresh/20 transition-all cursor-pointer" onClick={() => navigate('/weather')}>
-        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Local Weather</div>
-        <div className="flex justify-between items-center">
-          <div className="text-lg md:text-2xl font-bold">24°C</div>
-          <div className="text-right">
-            <div className="text-[10px] md:text-xs font-bold text-primary-fresh">Cloudy</div>
-            <div className="text-[8px] md:text-[10px] text-gray-500 truncate max-w-[60px] md:max-w-none">{user?.region}</div>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="col-span-6 md:col-span-3 p-3 md:p-4">
-        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Soil Nitrogen</div>
-        <div className="flex justify-between items-center">
-          <div className="text-lg md:text-2xl font-bold">186ppm</div>
-          <div className="text-right text-primary-fresh font-bold text-[10px] md:text-xs text-nowrap">Ideal</div>
-        </div>
-        <div className="w-full h-1 bg-gray-100 mt-2 md:mt-3 rounded-full overflow-hidden">
-          <motion.div initial={{ width: 0 }} animate={{ width: '74%' }} className="h-full bg-primary-fresh" />
-        </div>
-      </Card>
-
-      <Card className="col-span-6 md:col-span-3 p-3 md:p-4">
-        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Maize Yield Exp</div>
-        <div className="flex justify-between items-center">
-          <div className="text-lg md:text-2xl font-bold text-primary-dark">42.8 Bags</div>
-          <div className="text-right text-[10px] md:text-xs text-gray-500 font-bold">+18% vs Ly</div>
-        </div>
-      </Card>
-
-      <Card className="col-span-6 md:col-span-3 p-3 md:p-4">
-        <div className="text-[9px] md:text-[10px] uppercase font-bold text-gray-400 mb-1">Nairobi Market</div>
-        <div className="flex justify-between items-center">
-          <div className="text-lg md:text-2xl font-bold">KSh 3.4k</div>
-          <div className="text-right text-[10px] md:text-xs text-primary-fresh font-bold flex items-center gap-0.5 md:gap-1 justify-end">
-             <ArrowUpRight size={10} /> 1.8%
-          </div>
-        </div>
-      </Card>
-
       {/* Main Chart Area */}
       <Card className="col-span-12 lg:col-span-8 p-4 md:p-6 flex flex-col h-[300px] md:h-[400px]">
         <div className="flex justify-between items-center mb-4 md:mb-6">

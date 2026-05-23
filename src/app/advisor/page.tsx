@@ -28,16 +28,42 @@ export default function AdvisorPage({ user }: any) {
   }, [user, farms, crops]);
 
   const suggestedQuestions = [
-    { label: "Best crops for my region?", icon: "🌍" },
-    { label: "How to treat Maize Lethal Necrosis?", icon: "🌽" },
-    { label: "Current market prices in Nairobi?", icon: "📈" },
-    { label: "Optimal irrigation for tomatoes?", icon: "💧" },
+    { label: "Step-by-step Maize planting guide?", icon: "🌽" },
+    { label: "Tomato Late Blight & pest control?", icon: "🍅" },
+    { label: "Sukuma Wiki/Kales harvest & storage guide?", icon: "🥬" },
+    { label: "Best crop varieties for my county?", icon: "🌍" },
   ];
 
-  const handleSuggestionClick = (question: string) => {
-    setInput(question);
-    // Use a small timeout to allow state to update before sending if we want to auto-send
-    // For now, let's just populate the input so the user can see it
+  const handleSuggestionClick = async (question: string) => {
+    if (isLoading) return;
+    setInput('');
+    const userMessage = { role: 'user', content: question };
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      const history = messages.map(m => ({ 
+        role: (m.role === 'user' ? 'user' : 'model') as 'user' | 'model', 
+        parts: [{ text: m.content }] as [{ text: string }]
+      }));
+      
+      const stream = await getAgroLinkChatStream(question, history, farmerContext);
+      let fullResponse = '';
+      
+      setMessages(prev => [...prev, { role: 'model', content: '' }]);
+
+      for await (const chunk of stream) {
+        fullResponse += chunk.text;
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          return [...prev.slice(0, -1), { ...last, content: fullResponse }];
+        });
+      }
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'model', content: "Sorry, I'm having trouble connecting right now." }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {

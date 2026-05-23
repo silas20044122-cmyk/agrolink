@@ -15,7 +15,7 @@ interface ChatWindowProps {
 
 export default function ChatWindow({ room, onClose, user }: ChatWindowProps) {
   const [input, setInput] = useState('');
-  const { messages, loading, sendMessage } = useChat(room.id, user?.id);
+  const { messages, loading, sendMessage } = useChat(room.id, user);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isTyping, setIsTyping] = useState(false);
 

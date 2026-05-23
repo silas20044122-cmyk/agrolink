@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Routes, Route, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate, Link, Outlet } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Dashboard from './app/dashboard/page';
@@ -28,6 +28,7 @@ import { useAuth } from './hooks/useAppData';
 import { useNotifications } from './contexts/NotificationContext';
 import { NotificationPopover } from './components/NotificationPopover';
 import GlobalSearch from './components/GlobalSearch';
+import FeedbackButton from './components/FeedbackButton';
 
 // Move AppShell outside to maintain stable component identity
 const AppShell = ({ 
@@ -42,7 +43,7 @@ const AppShell = ({
   user,
   location
 }: { 
-  children: React.ReactNode,
+  children?: React.ReactNode,
   sidebar: React.ReactNode,
   mainHeader: React.ReactNode,
   bottomNav: React.ReactNode,
@@ -60,6 +61,7 @@ const AppShell = ({
       onClose={() => setIsSearchOpen(false)} 
       userId={user?.id}
     />
+    <FeedbackButton currentPath={location.pathname} />
     <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
       {mainHeader}
       <div className="flex-1 overflow-y-auto bg-bg-soft relative no-scrollbar">
@@ -72,7 +74,7 @@ const AppShell = ({
             transition={{ duration: 0.2 }}
             className="h-full"
           >
-            {children}
+            {children || <Outlet />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -387,17 +389,19 @@ export default function App() {
       } />
 
       {/* Protected Routes */}
-      <Route path="/dashboard" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Dashboard user={user} onSearchClick={() => setIsSearchOpen(true)} /></AppShell>} />
-      <Route path="/my-farms" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><MyFarms user={user} /></AppShell>} />
-      <Route path="/my-farms/:id" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><FarmDetails user={user} /></AppShell>} />
-      <Route path="/scanner" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Scanner /></AppShell>} />
-      <Route path="/advisor" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><AdvisorChat user={user} /></AppShell>} />
-      <Route path="/community" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Community /></AppShell>} />
-      <Route path="/market" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><MarketInsights user={user} /></AppShell>} />
-      <Route path="/weather" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Weather /></AppShell>} />
-      <Route path="/transport" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Transport user={user} /></AppShell>} />
-      <Route path="/profile" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><Profile user={user} onLogout={handleLogout} /></AppShell>} />
-      <Route path="/settings" element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location}><SettingsPage /></AppShell>} />
+      <Route element={<AppShell sidebar={sidebar} mainHeader={mainHeader} bottomNav={bottomNav} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} user={user} location={location} />}>
+        <Route path="/dashboard" element={<Dashboard user={user} onSearchClick={() => setIsSearchOpen(true)} />} />
+        <Route path="/my-farms" element={<MyFarms user={user} />} />
+        <Route path="/my-farms/:id" element={<FarmDetails user={user} />} />
+        <Route path="/scanner" element={<Scanner />} />
+        <Route path="/advisor" element={<AdvisorChat user={user} />} />
+        <Route path="/community" element={<Community />} />
+        <Route path="/market" element={<MarketInsights user={user} />} />
+        <Route path="/weather" element={<Weather />} />
+        <Route path="/transport" element={<Transport user={user} />} />
+        <Route path="/profile" element={<Profile user={user} onLogout={handleLogout} />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Route>
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
