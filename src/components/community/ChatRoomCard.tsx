@@ -22,7 +22,7 @@ export default function ChatRoomCard({ room, onClick }: ChatRoomCardProps) {
            </div>
            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 rounded-full text-[10px] font-black text-green-600 uppercase tracking-widest">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-              {room.activeUsers} Online
+              {room.activeUsers} {room.activeUsers === 1 ? 'member' : 'members'} joined
            </div>
         </div>
         

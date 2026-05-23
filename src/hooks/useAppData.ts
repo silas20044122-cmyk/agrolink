@@ -10,6 +10,22 @@ export function useAuth() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      let storedUser: UserProfile | null = null;
+      try {
+        storedUser = JSON.parse(localStorage.getItem('agrolink_user_profile') || 'null');
+      } catch (e) {}
+      if (!storedUser) {
+        storedUser = {
+          id: 'mock-farmer-id',
+          name: 'Silas Omulama',
+          email: 'silas20044122@gmail.com',
+          role: 'farmer',
+          region: 'Kakamega',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=silas'
+        };
+        localStorage.setItem('agrolink_user_profile', JSON.stringify(storedUser));
+      }
+      setUser(storedUser);
       setLoading(false);
       return;
     }
@@ -83,6 +99,11 @@ export function useAuth() {
   };
 
   const logout = async () => {
+    if (!isSupabaseConfigured) {
+      localStorage.removeItem('agrolink_user_profile');
+      setUser(null);
+      return;
+    }
     await supabase.auth.signOut();
   };
 

@@ -27,6 +27,27 @@ export default function Auth() {
     setMessage(null);
 
     try {
+      if (!isSupabaseConfigured) {
+        const stubUser = {
+          id: 'mock-farmer-id',
+          name: isLogin ? 'Silas Omulama' : (fullName || 'Silas Omulama'),
+          email: email || 'silas20044122@gmail.com',
+          role: 'farmer',
+          region: isLogin ? 'Kakamega' : (region || 'Kakamega'),
+          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${isLogin ? 'silas' : (fullName || 'silas')}`
+        };
+        localStorage.setItem('agrolink_user_profile', JSON.stringify(stubUser));
+        if (isLogin) {
+          window.location.href = '/dashboard';
+        } else {
+          setMessage('Registration successful!');
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1000);
+        }
+        return;
+      }
+
       if (isLogin) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,

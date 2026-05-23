@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
@@ -35,12 +35,62 @@ const CATEGORIES = [
 
 export default function CommunityPage() {
   const { user } = useAuth();
-  const { posts, rooms, loading, fetchPosts, likePost } = useCommunity(user?.id);
+  const { posts, rooms, loading, fetchPosts, fetchRooms, likePost, deletePost } = useCommunity(user?.id);
   
   const [activeTab, setActiveTab] = useState<'feed' | 'chat'>('feed');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [activeRoom, setActiveRoom] = useState<ChatRoom | null>(null);
+
+  useEffect(() => {
+    if (activeRoom) {
+      try {
+        const joined: string[] = JSON.parse(localStorage.getItem('agrolink_joined_rooms') || '[]');
+        if (!joined.includes(activeRoom.id)) {
+          joined.push(activeRoom.id);
+          localStorage.setItem('agrolink_joined_rooms', JSON.stringify(joined));
+          if (fetchRooms) {
+            fetchRooms();
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [activeRoom, fetchRooms]);
+
+  // Handle Shared Post Redirection on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const postId = params.get('post');
+    if (postId) {
+      setActiveTab('feed');
+      setSelectedCategory('All');
+    }
+  }, []);
+
+  // Smooth-scroll & highlight shared post once loader completes
+  useEffect(() => {
+    if (!loading && posts.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const postId = params.get('post');
+      if (postId) {
+        const postExists = posts.some(p => p.id === postId);
+        if (postExists) {
+          setTimeout(() => {
+            const element = document.getElementById(`post-${postId}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.classList.add('ring-4', 'ring-primary-fresh/50', 'transition-all', 'duration-500');
+              setTimeout(() => {
+                element.classList.remove('ring-4', 'ring-primary-fresh/50');
+              }, 3000);
+            }
+          }, 600);
+        }
+      }
+    }
+  }, [loading, posts]);
 
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
@@ -213,6 +263,7 @@ export default function CommunityPage() {
                         key={post.id} 
                         post={post} 
                         onLike={() => likePost(post.id)} 
+                        onDelete={() => deletePost(post.id)}
                         userId={user?.id}
                       />
                     ))

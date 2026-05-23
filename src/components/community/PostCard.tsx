@@ -1,22 +1,35 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, MessageSquare, Share2, MoreHorizontal, Clock, MapPin, Award, Send } from 'lucide-react';
+import { Heart, MessageSquare, Share2, MoreHorizontal, Clock, MapPin, Award, Send, Trash2 } from 'lucide-react';
 import { CommunityPost, useComments } from '@/src/hooks/useCommunity';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/src/lib/utils';
 import { useState } from 'react';
+import { isSupabaseConfigured } from '@/src/lib/supabase';
 
 interface PostCardProps {
   post: CommunityPost;
   onLike: () => void;
   userId?: string;
+  onDelete?: () => void;
 }
 
-export default function PostCard({ post, onLike, userId }: PostCardProps) {
+export default function PostCard({ post, onLike, userId, onDelete }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   const { comments, addComment, loading: commentsLoading } = useComments(post.id, userId);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/community?post=${post.id}`);
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+      setShowMenu(false);
+    }, 2000);
+  };
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,10 +45,25 @@ export default function PostCard({ post, onLike, userId }: PostCardProps) {
 
   return (
     <motion.div 
+      id={`post-${post.id}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-all group"
+      className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-all group relative"
     >
+      {/* Dynamic Copy Toast Accent */}
+      <AnimatePresence>
+        {copied && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-primary-dark text-white px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl whitespace-nowrap"
+          >
+            <Share2 size={12} className="text-primary-fresh animate-pulse" />
+            <span>Link Copied to Clipboard</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Post Header */}
       <div className="p-6 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -66,9 +94,51 @@ export default function PostCard({ post, onLike, userId }: PostCardProps) {
             </div>
           </div>
         </div>
-        <button className="p-2 text-gray-300 hover:text-gray-600 transition-colors">
-          <MoreHorizontal size={20} />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 text-gray-300 hover:text-gray-650 hover:bg-gray-50 rounded-full transition-colors"
+          >
+            <MoreHorizontal size={20} />
+          </button>
+          
+          <AnimatePresence>
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-20 overflow-hidden"
+                >
+                  <button
+                    onClick={handleShare}
+                    disabled={copied}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                  >
+                    <Share2 size={14} className={cn("text-gray-400", copied && "text-primary-fresh")} />
+                    {copied ? 'Link Copied!' : 'Share Link'}
+                  </button>
+                  {onDelete && (!isSupabaseConfigured || (userId && (post.authorId === userId || post.author?.id === userId))) && (
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this discussion post?')) {
+                          onDelete();
+                        }
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-50"
+                    >
+                      <Trash2 size={14} className="text-red-400" />
+                      Delete Post
+                    </button>
+                  )}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Post Content */}

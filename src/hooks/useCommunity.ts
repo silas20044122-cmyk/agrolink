@@ -53,6 +53,11 @@ export interface ChatMessage {
   imageUrl?: string;
   createdAt: string;
   author?: FarmerProfile;
+  replyTo?: {
+    id: string;
+    authorName: string;
+    content: string;
+  };
 }
 
 // === SYSTEM SEED DATA FOR BACKWARD-COMPATIBLE FALLBACKS ===
@@ -191,6 +196,43 @@ const DEFAULT_COMMENTS: Record<string, CommunityComment[]> = {
   ]
 };
 
+export function getRealMemberCount(roomId: string, currentUserId: string | undefined): number {
+  const defaultMsgs = DEFAULT_MESSAGES[roomId] || [];
+  
+  // Get from local storage
+  let localMessages: ChatMessage[] = [];
+  try {
+    localMessages = JSON.parse(localStorage.getItem(`agrolink_chat_messages_${roomId}`) || '[]');
+  } catch (e) {
+    // ignore
+  }
+
+  // Set of unique authorIds
+  const uniqueAuthors = new Set<string>();
+  
+  // Add authors from default messages
+  defaultMsgs.forEach(m => {
+    if (m.authorId) uniqueAuthors.add(m.authorId);
+  });
+  
+  // Add authors from local messages
+  localMessages.forEach(m => {
+    if (m.authorId) uniqueAuthors.add(m.authorId);
+  });
+
+  // Also, check if user has ever clicked "Join Chat" on this room. We can track this in localStorage
+  let joinedRoomIds: string[] = [];
+  try {
+    joinedRoomIds = JSON.parse(localStorage.getItem('agrolink_joined_rooms') || '[]');
+  } catch (e) {}
+
+  if (joinedRoomIds.includes(roomId) && currentUserId) {
+    uniqueAuthors.add(currentUserId);
+  }
+
+  return Math.max(uniqueAuthors.size, 1);
+}
+
 export function useCommunity(userId: string | undefined) {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -208,9 +250,15 @@ export function useCommunity(userId: string | undefined) {
       console.error(e);
     }
 
+    let deletedPostIds: string[] = [];
+    try {
+      deletedPostIds = JSON.parse(localStorage.getItem('agrolink_deleted_post_ids') || '[]');
+    } catch (e) {}
+
     if (!isSupabaseConfigured) {
       // Offline/Mock mode
-      let filteredPosts = localPosts.length > 0 ? [...localPosts] : [...DEFAULT_POSTS];
+      let filteredPosts = [...localPosts, ...DEFAULT_POSTS];
+      filteredPosts = filteredPosts.filter(p => !deletedPostIds.includes(p.id));
       if (category && category !== 'All') {
         filteredPosts = filteredPosts.filter(p => p.category === category);
       }
@@ -232,7 +280,8 @@ export function useCommunity(userId: string | undefined) {
       const { data: postsData, error: postsError } = await query;
       if (!postsError && postsData) {
         // Merge with local storage created posts that are not in database yet
-        const merged = [...localPosts.filter(lp => !postsData.some(p => p.id === lp.id)), ...postsData];
+        let merged = [...localPosts.filter(lp => !postsData.some(p => p.id === lp.id)), ...postsData];
+        merged = merged.filter(p => !deletedPostIds.includes(p.id));
         
         if (userId) {
           // Fetch likes for these posts by current user
@@ -254,7 +303,8 @@ export function useCommunity(userId: string | undefined) {
         }
       } else {
         // fallback
-        let filteredPosts = localPosts.length > 0 ? [...localPosts] : [...DEFAULT_POSTS];
+        let filteredPosts = [...localPosts, ...DEFAULT_POSTS];
+        filteredPosts = filteredPosts.filter(p => !deletedPostIds.includes(p.id));
         if (category && category !== 'All') {
           filteredPosts = filteredPosts.filter(p => p.category === category);
         }
@@ -262,7 +312,8 @@ export function useCommunity(userId: string | undefined) {
       }
     } catch (err) {
       console.error('Error fetching community posts, falling back:', err);
-      let filteredPosts = localPosts.length > 0 ? [...localPosts] : [...DEFAULT_POSTS];
+      let filteredPosts = [...localPosts, ...DEFAULT_POSTS];
+      filteredPosts = filteredPosts.filter(p => !deletedPostIds.includes(p.id));
       if (category && category !== 'All') {
         filteredPosts = filteredPosts.filter(p => p.category === category);
       }
@@ -274,7 +325,11 @@ export function useCommunity(userId: string | undefined) {
 
   const fetchRooms = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setRooms(DEFAULT_ROOMS);
+      const mappedDefault = DEFAULT_ROOMS.map(room => ({
+        ...room,
+        activeUsers: getRealMemberCount(room.id, userId)
+      }));
+      setRooms(mappedDefault);
       return;
     }
 
@@ -284,16 +339,57 @@ export function useCommunity(userId: string | undefined) {
         .select('*')
         .order('category', { ascending: true });
       
-      if (!error && data && data.length > 0) {
-         setRooms(data);
+      let roomsList = data && data.length > 0 ? data : DEFAULT_ROOMS;
+
+      // Query database to retrieve real unique participant counts
+      const { data: messagesData, error: msgError } = await supabase
+        .from('chat_messages')
+        .select('roomId, authorId');
+
+      if (!msgError && messagesData) {
+        // Group by roomId and construct unique author lists
+        const counts: Record<string, Set<string>> = {};
+        messagesData.forEach(msg => {
+          if (!counts[msg.roomId]) counts[msg.roomId] = new Set();
+          counts[msg.roomId].add(msg.authorId);
+        });
+
+        // Also merge with locally joined rooms
+        let joinedRoomIds: string[] = [];
+        try {
+          joinedRoomIds = JSON.parse(localStorage.getItem('agrolink_joined_rooms') || '[]');
+        } catch (e) {}
+
+        roomsList = roomsList.map(room => {
+          const authorSet = counts[room.id] || new Set();
+          // Seed standard message authors
+          const defaultMsgs = DEFAULT_MESSAGES[room.id] || [];
+          defaultMsgs.forEach(m => authorSet.add(m.authorId));
+          
+          if (joinedRoomIds.includes(room.id) && userId) {
+            authorSet.add(userId);
+          }
+          return {
+            ...room,
+            activeUsers: Math.max(authorSet.size, 1)
+          };
+        });
       } else {
-         setRooms(DEFAULT_ROOMS);
+        roomsList = roomsList.map(room => ({
+          ...room,
+          activeUsers: getRealMemberCount(room.id, userId)
+        }));
       }
+
+      setRooms(roomsList);
     } catch (err) {
       console.error('Error fetching chat rooms, falling back:', err);
-      setRooms(DEFAULT_ROOMS);
+      setRooms(DEFAULT_ROOMS.map(room => ({
+        ...room,
+        activeUsers: getRealMemberCount(room.id, userId)
+      })));
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     fetchPosts();
@@ -301,11 +397,16 @@ export function useCommunity(userId: string | undefined) {
 
     if (!isSupabaseConfigured) return;
 
-    // Subscribe to new posts
+    // Subscribe to post inserts and deletes
     const channelName = `community-posts-${Math.random().toString(36).substring(7)}`;
     const postSubscription = supabase
       .channel(channelName)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'community_posts' }, async (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, async (payload) => {
+        if (payload.eventType === 'DELETE') {
+          setPosts(prev => prev.filter(p => p.id !== payload.old.id));
+          return;
+        }
+        if (payload.eventType !== 'INSERT') return;
         try {
           const { data: authorData } = await supabase
             .from('farmer_profiles')
@@ -422,7 +523,42 @@ export function useCommunity(userId: string | undefined) {
     }
   };
 
-  return { posts, rooms, loading, fetchPosts, createPost, likePost };
+  const deletePost = async (postId: string) => {
+    // 1. Optimistic Update
+    setPosts(prev => prev.filter(p => p.id !== postId));
+
+    // Delete from Local Storage and track as deleted
+    try {
+      const existing: CommunityPost[] = JSON.parse(localStorage.getItem('agrolink_community_posts') || '[]');
+      const filtered = existing.filter(p => p.id !== postId);
+      localStorage.setItem('agrolink_community_posts', JSON.stringify(filtered));
+
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('agrolink_deleted_post_ids') || '[]');
+      if (!deletedIds.includes(postId)) {
+        deletedIds.push(postId);
+        localStorage.setItem('agrolink_deleted_post_ids', JSON.stringify(deletedIds));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!isSupabaseConfigured) {
+      return { success: true, error: null };
+    }
+
+    try {
+      const { error } = await supabase
+        .from('community_posts')
+        .delete()
+        .eq('id', postId);
+      return { success: !error, error };
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  return { posts, rooms, loading, fetchPosts, fetchRooms, createPost, likePost, deletePost };
 }
 
 export function useComments(postId: string, userId: string | undefined) {
@@ -536,6 +672,28 @@ export function useComments(postId: string, userId: string | undefined) {
   return { comments, loading, addComment, refreshComments: fetchComments };
 }
 
+export const parseMessage = (msg: ChatMessage): ChatMessage => {
+  if (msg.replyTo) return msg; // Already has replyTo field set
+  if (msg.content && msg.content.startsWith('_REPLY_TO_:')) {
+    const divider = msg.content.indexOf('_CONTENT_:');
+    if (divider !== -1) {
+      try {
+        const replyJson = msg.content.substring(11, divider);
+        const replyTo = JSON.parse(replyJson);
+        const content = msg.content.substring(divider + 10);
+        return {
+          ...msg,
+          content,
+          replyTo
+        };
+      } catch (e) {
+        console.error('Error parsing reply content: ', e);
+      }
+    }
+  }
+  return msg;
+};
+
 export function useChat(roomId: string, userOrUserId: any) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -558,10 +716,16 @@ export function useChat(roomId: string, userOrUserId: any) {
         console.error(e);
       }
 
+      let deletedMsgIds: string[] = [];
+      try {
+        deletedMsgIds = JSON.parse(localStorage.getItem('agrolink_deleted_message_ids') || '[]');
+      } catch (e) {}
+
       const defaultMsgsForRoom = DEFAULT_MESSAGES[roomId] || [];
 
       if (!isSupabaseConfigured) {
-        setMessages([...defaultMsgsForRoom, ...localMessages]);
+        const unfiltered = [...defaultMsgsForRoom, ...localMessages].map(parseMessage);
+        setMessages(unfiltered.filter(m => !deletedMsgIds.includes(m.id)));
         setLoading(false);
         return;
       }
@@ -577,13 +741,15 @@ export function useChat(roomId: string, userOrUserId: any) {
         if (!error && data) {
           // Merge db and local unsynced chats
           const merged = [...data, ...localMessages.filter(lm => !data.some(d => d.id === lm.id))];
-          setMessages(merged);
+          setMessages(merged.map(parseMessage).filter(m => !deletedMsgIds.includes(m.id)));
         } else {
-          setMessages([...defaultMsgsForRoom, ...localMessages]);
+          const unfiltered = [...defaultMsgsForRoom, ...localMessages].map(parseMessage);
+          setMessages(unfiltered.filter(m => !deletedMsgIds.includes(m.id)));
         }
       } catch (err) {
         console.error('Error fetching chat messages', err);
-        setMessages([...defaultMsgsForRoom, ...localMessages]);
+        const unfiltered = [...defaultMsgsForRoom, ...localMessages].map(parseMessage);
+        setMessages(unfiltered.filter(m => !deletedMsgIds.includes(m.id)));
       } finally {
         setLoading(false);
       }
@@ -593,15 +759,20 @@ export function useChat(roomId: string, userOrUserId: any) {
 
     if (!isSupabaseConfigured) return;
 
-    // Realtime subscription
+    // Realtime subscription (INSERT and DELETE)
     const channelName = `room-${roomId}-${Math.random().toString(36).substring(7)}`;
     const messageSubscription = supabase
       .channel(channelName)
       .on('postgres_changes', { 
-         event: 'INSERT', 
+         event: '*', 
          schema: 'public', 
          table: 'chat_messages'
       }, async (payload) => {
+        if (payload.eventType === 'DELETE') {
+          setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+          return;
+        }
+        if (payload.eventType !== 'INSERT') return;
         // filter on payload roomId manually or via custom check to avoid case-sensitivity bugs on roomId column filter
         if (payload.new.roomId !== roomId) return;
 
@@ -612,7 +783,8 @@ export function useChat(roomId: string, userOrUserId: any) {
             .eq('id', payload.new.authorId)
             .single();
           
-          const newMessage = { ...payload.new, author: authorData } as ChatMessage;
+          const rawMessage = { ...payload.new, author: authorData } as ChatMessage;
+          const newMessage = parseMessage(rawMessage);
           setMessages(prev => {
             // Prevent duplicate insertion
             if (prev.some(m => m.id === newMessage.id)) return prev;
@@ -629,13 +801,21 @@ export function useChat(roomId: string, userOrUserId: any) {
     };
   }, [roomId, storageKey]);
 
-  const sendMessage = async (content: string, imageUrl?: string) => {
+  const sendMessage = async (
+    content: string, 
+    imageUrl?: string, 
+    replyTo?: { id: string; authorName: string; content: string }
+  ) => {
     const fakeMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const dbContent = replyTo 
+      ? `_REPLY_TO_:${JSON.stringify(replyTo)}_CONTENT_:${content}` 
+      : content;
+
     const newMessage: ChatMessage = {
       id: fakeMessageId,
       roomId,
       authorId: userId || 'anonymous',
-      content,
+      content: dbContent,
       imageUrl,
       createdAt: new Date().toISOString(),
       author: {
@@ -648,13 +828,24 @@ export function useChat(roomId: string, userOrUserId: any) {
         reputationScore: 120,
         contributionsCount: 1,
         bio: ''
-      }
+      },
+      replyTo // UI local display version
     };
 
-    // 1. Optimistic Update: instantly append to ui so it feels real-time of 0ms lag
-    setMessages(prev => [...prev, newMessage]);
+    // 1. Optimistic Update: instantly append to ui as parsed
+    const uiMessage = parseMessage(newMessage);
+    setMessages(prev => [...prev, uiMessage]);
 
-    // 2. Save to Local Storage fallback
+    // Add search room id to joined list to auto-upgrade members size
+    try {
+      const joined: string[] = JSON.parse(localStorage.getItem('agrolink_joined_rooms') || '[]');
+      if (!joined.includes(roomId)) {
+        joined.push(roomId);
+        localStorage.setItem('agrolink_joined_rooms', JSON.stringify(joined));
+      }
+    } catch (e) {}
+
+    // 2. Save to Local Storage fallback with the database/encoded format
     try {
       const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
       localStorage.setItem(storageKey, JSON.stringify([...existing, newMessage]));
@@ -672,7 +863,7 @@ export function useChat(roomId: string, userOrUserId: any) {
         .insert({
           roomId,
           authorId: userId,
-          content,
+          content: dbContent,
           imageUrl,
         });
 
@@ -683,5 +874,40 @@ export function useChat(roomId: string, userOrUserId: any) {
     }
   };
 
-  return { messages, loading, sendMessage };
+  const deleteMessage = async (messageId: string) => {
+    // 1. Optimistic UI Update
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+
+    // Delete from Local Storage and track as deleted
+    try {
+      const existing: ChatMessage[] = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const filtered = existing.filter(m => m.id !== messageId);
+      localStorage.setItem(storageKey, JSON.stringify(filtered));
+
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('agrolink_deleted_message_ids') || '[]');
+      if (!deletedIds.includes(messageId)) {
+        deletedIds.push(messageId);
+        localStorage.setItem('agrolink_deleted_message_ids', JSON.stringify(deletedIds));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!isSupabaseConfigured) {
+      return { success: true, error: null };
+    }
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('id', messageId);
+      return { success: !error, error };
+    } catch (err) {
+      console.error('Error deleting message:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  return { messages, loading, sendMessage, deleteMessage };
 }
