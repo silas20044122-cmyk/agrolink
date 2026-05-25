@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 
-export default function TypingIndicator() {
+export default function TypingIndicator({ label = "Farmer typing..." }: { label?: string }) {
   return (
     <div className="flex items-center gap-1 px-4 py-3 bg-white border border-gray-100 rounded-2xl w-fit shadow-sm">
       <motion.div
@@ -18,7 +18,7 @@ export default function TypingIndicator() {
         transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
         className="w-1.5 h-1.5 bg-primary-fresh rounded-full"
       />
-      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-2">Farmer typing...</span>
+      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-2">{label}</span>
     </div>
   );
 }

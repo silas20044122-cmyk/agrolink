@@ -107,7 +107,44 @@ export function useAuth() {
     await supabase.auth.signOut();
   };
 
-  return { user, loading, login, logout };
+  const updateProfile = async (updatedData: Partial<UserProfile>) => {
+    if (!user) return;
+    
+    const newProfile = { ...user, ...updatedData };
+    setUser(newProfile);
+    
+    if (!isSupabaseConfigured) {
+      localStorage.setItem('agrolink_user_profile', JSON.stringify(newProfile));
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.from('customer_profiles').upsert({
+        id: newProfile.id,
+        displayName: newProfile.name,
+        avatarUrl: newProfile.avatarUrl,
+        location: newProfile.region,
+        phoneNumber: newProfile.phoneNumber,
+        updatedAt: new Date().toISOString()
+      });
+      if (error) {
+        // Fallback to general farmer_profiles error check
+        const { error: err2 } = await supabase.from('farmer_profiles').upsert({
+          id: newProfile.id,
+          displayName: newProfile.name,
+          avatarUrl: newProfile.avatarUrl,
+          location: newProfile.region,
+          phoneNumber: newProfile.phoneNumber,
+          updatedAt: new Date().toISOString()
+        });
+        if (err2) throw err2;
+      }
+    } catch (err) {
+      console.error('Failed to sync profile change to Supabase:', err);
+    }
+  };
+
+  return { user, loading, login, logout, updateProfile };
 }
 
 // Backward compatibility or rename for App.tsx

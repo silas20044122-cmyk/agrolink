@@ -64,7 +64,10 @@ const AppShell = ({
     <FeedbackButton currentPath={location.pathname} />
     <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
       {mainHeader}
-      <div className="flex-1 overflow-y-auto bg-bg-soft relative no-scrollbar">
+      <div className={cn(
+        "flex-1 bg-bg-soft relative no-scrollbar",
+        location.pathname === '/advisor' ? "overflow-hidden" : "overflow-y-auto"
+      )}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -119,10 +122,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (user && location.pathname === '/') {
-      navigate('/dashboard');
+    if (!loading) {
+      if (user) {
+        if (location.pathname === '/' || location.pathname === '/auth') {
+          navigate('/dashboard');
+        }
+      } else {
+        const publicPaths = ['/', '/auth', '/about', '/solutions'];
+        if (!publicPaths.includes(location.pathname)) {
+          navigate(`/auth?redirect=${encodeURIComponent(location.pathname + location.search)}`, { replace: true });
+        }
+      }
     }
-  }, [user, location.pathname]);
+  }, [user, loading, location.pathname, location.search, navigate]);
 
   if (loading) {
     return (

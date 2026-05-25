@@ -43,3 +43,22 @@
   @apply font-bold mt-6 mb-2;
 }
 
+/* Custom premium scrollbar utilities */
+.premium-scrollbar::-webkit-scrollbar {
+  height: 4px;
+}
+.premium-scrollbar::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.4);
+  background-clip: padding-box;
+  border-radius: 10px;
+}
+.premium-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.35);
+  background-clip: padding-box;
+  border-radius: 10px;
+}
+.premium-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.6);
+}
+
+

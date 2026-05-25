@@ -1,201 +1,222 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, User, Bot, Sparkles, MessageSquare, Trash2, Globe2, ImageIcon, Plus } from 'lucide-react';
-import { Button, Card, Badge } from '@/src/components/ui/Base';
-import { getAgroLinkChatStream } from '@/src/services/geminiService';
-import { useFarms, useCrops } from '@/src/hooks/useAppData';
-import { CROP_TYPES } from '@/src/lib/constants';
+import { Send, Bot, User, Trash2, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { cn } from '@/src/lib/utils';
-import TypingIndicator from '@/src/components/chat/TypingIndicator';
+import { getAgroLinkChatStream } from '../../services/geminiService';
+import { cn } from '../../lib/utils';
+import TypingIndicator from '../../components/chat/TypingIndicator';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export default function AdvisorPage({ user }: any) {
-  const { farms } = useFarms(user?.id);
-  const { crops } = useCrops(user?.id);
-
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('agrolink_simple_chat');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse saved chat history", e);
+      }
+    }
+    return [
+      {
+        role: 'assistant',
+        content: `Habari Silas! I am your simple AgroLink AI advisor. Ask me any question about your crops, pest control, soil nutrition, or weather preparation.`
+      }
+    ];
+  });
+  
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Memoize context
-  const farmerContext = useMemo(() => {
-    if (!user) return '';
-    const farmInfo = farms.map((f: any) => `- ${f.name} in ${f.county}`).join('\n');
-    const cropInfo = crops.map((c: any) => `- ${c.name} (${c.variety}) - Status: ${c.status}`).join('\n');
-    
-    return `User: ${user.name}, Region: ${user.region}\nFarms:\n${farmInfo}\nCrops:\n${cropInfo}`;
-  }, [user, farms, crops]);
-
-  const suggestedQuestions = [
-    { label: "Step-by-step Maize planting guide?", icon: "🌽" },
-    { label: "Tomato Late Blight & pest control?", icon: "🍅" },
-    { label: "Sukuma Wiki/Kales harvest & storage guide?", icon: "🥬" },
-    { label: "Best crop varieties for my county?", icon: "🌍" },
-  ];
-
-  const handleSuggestionClick = async (question: string) => {
-    if (isLoading) return;
-    setInput('');
-    const userMessage = { role: 'user', content: question };
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      const history = messages.map(m => ({ 
-        role: (m.role === 'user' ? 'user' : 'model') as 'user' | 'model', 
-        parts: [{ text: m.content }] as [{ text: string }]
-      }));
-      
-      const stream = await getAgroLinkChatStream(question, history, farmerContext);
-      let fullResponse = '';
-      
-      setMessages(prev => [...prev, { role: 'model', content: '' }]);
-
-      for await (const chunk of stream) {
-        fullResponse += chunk.text;
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          return [...prev.slice(0, -1), { ...last, content: fullResponse }];
-        });
-      }
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'model', content: "Sorry, I'm having trouble connecting right now." }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Sync messaging history to local storage for convenience
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    localStorage.setItem('agrolink_simple_chat', JSON.stringify(messages));
+  }, [messages]);
+
+  // Handle automatic scrolling to physical bottom of messages feed
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
-    const userMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+
+    const userMessage = input.trim();
     setInput('');
     setIsLoading(true);
 
+    // Append user message immediately
+    const updatedMessages = [...messages, { role: 'user', content: userMessage } as Message];
+    setMessages(updatedMessages);
+
     try {
-      const history = messages.map(m => ({ 
-        role: (m.role === 'user' ? 'user' : 'model') as 'user' | 'model', 
-        parts: [{ text: m.content }] as [{ text: string }]
+      // Create empty placeholder message for model response streaming
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+      // Transform history to expected format
+      const historyToSend = updatedMessages.map(msg => ({
+        role: msg.role === 'user' ? ('user' as const) : ('model' as const),
+        parts: [{ text: msg.content }] as [{ text: string }]
       }));
-      
-      const stream = await getAgroLinkChatStream(input, history, farmerContext);
-      let fullResponse = '';
-      
-      // We don't add the model message immediately here if we want a separate typing state, 
-      // but the current logic adds it and then updates it. 
-      // Let's keep the logic but show the loader if content is empty.
-      setMessages(prev => [...prev, { role: 'model', content: '' }]);
+
+      const stream = getAgroLinkChatStream(userMessage, historyToSend.slice(0, -1));
+      let accumulatedText = '';
 
       for await (const chunk of stream) {
-        fullResponse += chunk.text;
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          return [...prev.slice(0, -1), { ...last, content: fullResponse }];
-        });
+        if (chunk.text) {
+          accumulatedText += chunk.text;
+          setMessages(prev => {
+            const copy = [...prev];
+            if (copy.length > 0) {
+              copy[copy.length - 1] = {
+                role: 'assistant',
+                content: accumulatedText
+              };
+            }
+            return copy;
+          });
+        }
       }
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'model', content: "Sorry, I'm having trouble connecting right now." }]);
+    } catch (err: any) {
+      console.error("Advisor chat request failed:", err);
+      setMessages(prev => {
+        const copy = [...prev];
+        if (copy.length > 0) {
+          copy[copy.length - 1] = {
+            role: 'assistant',
+            content: `⚠️ **Advisory Offline**: ${err?.message || "Could not connect to AI advisor. Please check your network and Gemini API key."}`
+          };
+        }
+        return copy;
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleClearHistory = () => {
+    if (window.confirm("Are you sure you want to clear your conversation history?")) {
+      const resetMsg: Message[] = [
+        {
+          role: 'assistant',
+          content: `Habari Silas! I have cleared our session. Ask me any agricultural question whenever you're ready.`
+        }
+      ];
+      setMessages(resetMsg);
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto h-full flex flex-col p-2 md:p-6 pb-28 md:pb-6">
-      <header className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-primary-fresh/10 rounded-2xl flex items-center justify-center text-primary-fresh">
-          <Bot size={24} />
+    <div className="flex flex-col h-full bg-[#FAFAF9] text-gray-800 font-sans relative overflow-hidden select-none">
+      
+      {/* Header Panel */}
+      <header className="h-14 border-b border-gray-200/60 bg-white flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-1.5 bg-[#1B5E20] rounded-xl text-white shadow-xs">
+            <Sparkles size={16} />
+          </div>
+          <div>
+            <h1 className="font-bold text-gray-900 text-sm sm:text-base tracking-tight leading-none">AgroLink AI</h1>
+            <p className="text-[10px] text-emerald-600 font-bold tracking-widest uppercase mt-0.5">Simple AI Advisor</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-primary-dark">AI Technical Advisor</h2>
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Available for agricultural advisory</span>
-        </div>
+
+        {/* Clear Button */}
+        <button 
+          onClick={handleClearHistory}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-gray-500 hover:text-red-650 hover:bg-gray-100/80 rounded-xl transition-all cursor-pointer outline-none border border-transparent"
+          title="Clear Conversation History"
+        >
+          <Trash2 size={13} />
+          <span className="hidden sm:inline">Clear Chat</span>
+        </button>
       </header>
 
-      <Card className="flex-1 overflow-hidden flex flex-col border-none shadow-2xl bg-white rounded-[2.5rem]">
-         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-gray-50/20 no-scrollbar pb-12">
-           {messages.length === 0 && (
-             <motion.div 
-               initial={{ opacity: 0, y: 10 }}
-               animate={{ opacity: 1, y: 0 }}
-               className="h-full flex flex-col items-center justify-center text-center space-y-8"
-             >
-               <div className="space-y-4">
-                 <div className="w-20 h-20 bg-primary-fresh/10 rounded-[2rem] flex items-center justify-center text-primary-fresh mx-auto">
-                    <Sparkles size={40} className="opacity-40" />
-                 </div>
-                 <p className="text-sm text-gray-400 font-medium max-w-xs">Ask me about crop health, market shifts, or irrigation strategies.</p>
-               </div>
+      {/* Main Container Scroll Box */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-5 max-w-2xl w-full mx-auto premium-scrollbar min-h-0 relative">
+        <div className="space-y-4">
+          {messages.map((msg, idx) => (
+            <motion.div 
+              key={idx}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.15 }}
+              className={cn(
+                "flex gap-3 max-w-[85%] md:max-w-[80%] items-start",
+                msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
+              )}
+            >
+              {/* Profile Thumbnail */}
+              <div className={cn(
+                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border text-xs font-bold shadow-xs",
+                msg.role === 'user' 
+                  ? "bg-gray-800 border-gray-800 text-white" 
+                  : "bg-white border-gray-100 text-[#1B5E20]"
+              )}>
+                {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+              </div>
 
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md px-4">
-                 {suggestedQuestions.map((q, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSuggestionClick(q.label)}
-                      className="p-4 bg-white border border-gray-100 rounded-2xl text-left hover:border-primary-fresh hover:shadow-md transition-all group flex items-start gap-3"
-                    >
-                      <span className="text-xl">{q.icon}</span>
-                      <span className="text-xs font-bold text-primary-dark group-hover:text-primary-fresh transition-colors leading-tight">{q.label}</span>
-                    </button>
-                 ))}
-               </div>
-             </motion.div>
-           )}
-           
-           <AnimatePresence initial={false}>
-             {messages.map((m, i) => (
-               <motion.div 
-                 key={i} 
-                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                 transition={{ duration: 0.3 }}
-                 className={cn("flex items-start gap-4", m.role === 'user' ? "flex-row-reverse" : "flex-row")}
-               >
-                 <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", m.role === 'user' ? "bg-primary-dark text-white" : "bg-white text-primary-fresh border border-gray-100")}>
-                   {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
-                 </div>
-                 <div className={cn("max-w-[85%] sm:max-w-[80%] p-6 shadow-sm rounded-[2rem]", m.role === 'user' ? "bg-primary-fresh text-white rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none border border-gray-100")}>
-                   <div className="markdown-body text-sm leading-relaxed min-h-[1.25rem]">
-                     {m.role === 'model' && m.content === '' ? (
-                       <TypingIndicator />
-                     ) : (
-                       <ReactMarkdown>{m.content}</ReactMarkdown>
-                     )}
-                   </div>
-                 </div>
-               </motion.div>
-             ))}
-           </AnimatePresence>
-         </div>
+              {/* Chat bubble body */}
+              <div className={cn(
+                "p-3.5 rounded-xl text-xs sm:text-[13px] leading-relaxed border shadow-xs break-words overflow-hidden",
+                msg.role === 'user'
+                  ? "bg-[#1B5E20] text-white border-[#1B5E20]/10 rounded-tr-none"
+                  : "bg-white text-gray-700 border-gray-100/90 rounded-tl-none"
+              )}>
+                <div className="markdown-body">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+          {isLoading && <TypingIndicator />}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
 
-         <div className="p-6 md:p-8 bg-white border-t border-gray-50">
-           <div className="max-w-3xl mx-auto flex items-end gap-3 relative">
-             <textarea 
-               rows={1}
-               value={input}
-               disabled={isLoading}
-               onChange={(e) => setInput(e.target.value)}
-               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-               placeholder={isLoading ? "AI is thinking..." : "Ask for advice..."}
-               className="w-full pl-5 pr-14 py-4 bg-gray-50 border-none rounded-[1.75rem] outline-none resize-none text-sm font-medium disabled:opacity-50"
-             />
-             <button 
-               onClick={handleSend} 
-               disabled={!input.trim() || isLoading} 
-               className="absolute right-1.5 bottom-1.5 p-3.5 bg-primary-dark text-white rounded-2xl disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-             >
-               <Send size={18} />
-             </button>
-           </div>
-         </div>
-      </Card>
+      {/* Static Footer Input Panel */}
+      {/* pb-24 on mobile shifts the text bar cleanly above the fixed bottom navigation panel */}
+      <div className="bg-white border-t border-gray-150 p-4 pb-24 sm:p-5 sm:pb-5 shrink-0 z-20 shadow-[0_-2px_8px_rgba(0,0,0,0.015)] selection:bg-[#E8F5E9]">
+        <div className="max-w-xl mx-auto space-y-2.5">
+          
+          {/* Input Row Box */}
+          <div className="flex gap-2 bg-gray-50 border border-gray-200/80 rounded-xl focus-with-within:bg-white focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-50 transition-all p-1.5 shadow-xs">
+            <input 
+              type="text"
+              value={input}
+              disabled={isLoading}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Type your question about crops or weather..."
+              className="flex-1 bg-transparent px-2.5 py-1.5 text-xs sm:text-[13px] text-gray-800 placeholder-gray-400 font-medium outline-none disabled:opacity-50"
+            />
+            
+            <button 
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              className="p-2 bg-[#1B5E20] hover:bg-emerald-700 text-white rounded-lg disabled:opacity-25 active:scale-95 transition-all shadow-xs flex items-center justify-center cursor-pointer shrink-0"
+              title="Submit Inquiry"
+            >
+              <Send size={13} className="stroke-[2.5]" />
+            </button>
+          </div>
+
+          <p className="text-[9px] sm:text-[10px] text-center text-gray-400 font-medium leading-none">
+            Ask simple questions about planting, pests, crop rotation or disease remedies.
+          </p>
+        </div>
+      </div>
+
     </div>
   );
 }
