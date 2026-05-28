@@ -1,5 +1,5 @@
 import express from "express";
-import { getAgroLinkChatStream, generateMarketInsight, analyzeCropDisease } from "../services/geminiServer.ts";
+import { getAgroLinkChatStream, generateMarketInsight, analyzeCropDisease } from "../services/geminiServer.js";
 
 const app = express();
 
