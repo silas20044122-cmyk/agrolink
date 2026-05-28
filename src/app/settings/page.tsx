@@ -934,7 +934,7 @@ export default function Settings() {
         </div>
 
         {/* Navigation Sidebar (Desktop View) */}
-        <div className="hidden lg:block lg:col-span-3 lg:sticky lg:top-8 space-y-4">
+        <div className="hidden lg:block lg:col-span-4 lg:sticky lg:top-8 space-y-4">
           <div className="bg-white/95 backdrop-blur-md border border-gray-100/90 shadow-lg shadow-gray-100/20 rounded-[24px] p-5 space-y-6">
             
             {/* Sidebar Header */}
@@ -955,15 +955,22 @@ export default function Settings() {
                   <h5 className="text-[10px] font-black tracking-widest text-gray-400 uppercase select-none px-1">
                     {group.title}
                   </h5>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {group.items.map((item) => (
-                      <button
+                      <div
                         key={item.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setActiveTab(item.id)}
-                        className={`group relative w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 font-bold text-sm cursor-pointer outline-none select-none text-left overflow-hidden ${
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setActiveTab(item.id);
+                          }
+                        }}
+                        className={`group relative w-full flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 font-bold text-sm cursor-pointer outline-none select-none text-left overflow-hidden ${
                           activeTab === item.id 
                             ? 'text-white scale-[1.02] shadow-md shadow-emerald-500/15' 
-                            : 'text-gray-500 hover:text-gray-900 hover:translate-x-1.5'
+                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50/50 hover:translate-x-1'
                         }`}
                       >
                         {/* Layout Backdrop Animation */}
@@ -975,12 +982,12 @@ export default function Settings() {
                           />
                         )}
 
-                        <div className="relative z-10 flex items-center gap-3 w-full">
+                        <div className="relative z-10 flex items-center gap-2.5 w-full min-w-0">
                           {/* Left accent indicator */}
                           {activeTab === item.id && (
                             <motion.div
                               layoutId="sidebar-active-line"
-                              className="absolute -left-3 top-1/4 bottom-1/4 w-0.5 bg-white rounded-full"
+                              className="absolute -left-3.5 top-1/4 bottom-1/4 w-0.5 bg-white rounded-full"
                               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                             />
                           )}
@@ -988,21 +995,23 @@ export default function Settings() {
                           {/* Icon Container */}
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0 ${
                             activeTab === item.id 
-                              ? 'bg-white/20 text-white shadow-sm' 
+                              ? 'bg-white/20 text-white shadow-xs' 
                               : 'bg-gray-50 text-gray-400 group-hover:bg-emerald-50 group-hover:text-emerald-600'
                           }`}>
                             {item.icon}
                           </div>
 
                           {/* Label */}
-                          <span className="font-bold tracking-tight">{item.label}</span>
+                          <span className="font-bold tracking-tight text-[13px] leading-tight flex-1 min-w-0">
+                            {item.label}
+                          </span>
 
                           {/* Badges */}
-                          <div className="ml-auto">
+                          <div className="shrink-0 ml-1">
                             {renderBadge(item.id, activeTab === item.id)}
                           </div>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                   {/* Subtle divider except for last group */}
@@ -1017,7 +1026,7 @@ export default function Settings() {
         </div>
 
         {/* Form and Preferences Panels */}
-        <div className="lg:col-span-9 bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-gray-100">
+        <div className="lg:col-span-8 bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-gray-100">
           
           <AnimatePresence mode="wait">
             

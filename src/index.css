@@ -20,11 +20,138 @@
 
 @layer base {
   body {
-    @apply bg-bg-soft text-[#1B5E20] antialiased font-sans;
+    @apply bg-bg-soft text-[#1B5E20] antialiased font-sans transition-colors duration-200;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight text-[#1B5E20];
+    @apply font-display tracking-tight text-[#1B5E20] transition-colors duration-200;
   }
+}
+
+/* System-Wide Dark Theme Support Custom Overrides */
+html.dark {
+  --color-bg-soft: #070b08;
+  --color-sidebar-active: #112214;
+}
+
+html.dark body {
+  background-color: #070b08 !important;
+  color: #e4e4e7 !important;
+}
+
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: #f4f4f5 !important;
+}
+
+/* Hard backgrounds - map white cards and panels to dark slate */
+html.dark .bg-white,
+html.dark [class*="bg-white/95"],
+html.dark [class*="bg-white/90"],
+html.dark [class*="bg-white/85"],
+html.dark [class*="bg-white/50"] {
+  background-color: #0c120e !important;
+}
+
+html.dark .bg-bg-soft {
+  background-color: #070b08 !important;
+}
+
+html.dark .bg-gray-50,
+html.dark [class*="bg-gray-50/"] {
+  background-color: #101713 !important;
+}
+
+html.dark .bg-gray-100,
+html.dark [class*="bg-gray-100/"] {
+  background-color: #121c15 !important;
+}
+
+html.dark .bg-sidebar-active {
+  background-color: rgba(67, 160, 71, 0.15) !important;
+  color: #81c784 !important;
+}
+
+/* Soft interactions & glassy states in dark mode */
+html.dark .hover\:bg-gray-50\/50:hover,
+html.dark .hover\:bg-gray-50:hover,
+html.dark .group:hover .group-hover\:bg-emerald-50 {
+  background-color: rgba(67, 160, 71, 0.12) !important;
+}
+
+/* Borders and lines */
+html.dark .border-gray-100,
+html.dark [class*="border-gray-100"],
+html.dark .border-gray-150,
+html.dark [class*="border-gray-150"],
+html.dark .border-gray-200,
+html.dark [class*="border-gray-200"],
+html.dark .border-gray-300,
+html.dark [class*="border-gray-300"] {
+  border-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Light shadow kill switch */
+html.dark [class*="shadow-gray-100"] {
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  box-shadow: none !important;
+}
+
+/* Text coloring and legibility */
+html.dark .text-gray-900,
+html.dark .text-primary-dark {
+  color: #f4f4f5 !important;
+}
+
+html.dark .text-gray-800,
+html.dark .text-gray-700 {
+  color: #e4e4e7 !important;
+}
+
+html.dark .text-gray-650,
+html.dark .text-gray-600,
+html.dark .text-gray-500 {
+  color: #a1a1aa !important;
+}
+
+html.dark .text-gray-400 {
+  color: #71717a !important;
+}
+
+/* Hover and active text overrides */
+html.dark .hover\:text-gray-900:hover,
+html.dark .group:hover .group-hover\:text-emerald-600 {
+  color: #81c784 !important;
+}
+
+html.dark aside,
+html.dark header,
+html.dark nav {
+  border-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+html.dark select,
+html.dark input {
+  color: #f4f4f5 !important;
+  background-color: #101713 !important;
+  border-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+html.dark select option {
+  background-color: #0c120e !important;
+  color: #f4f4f5 !important;
+}
+
+/* Scrollbar dark themes */
+html.dark .premium-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+html.dark .premium-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.25);
 }
 
 .markdown-body {

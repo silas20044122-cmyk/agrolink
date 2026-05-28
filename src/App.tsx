@@ -122,6 +122,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const savedTheme = localStorage.getItem('agrolink_selected_theme');
+    const root = document.documentElement;
+    if (savedTheme === 'dark') {
+      root.classList.add('dark');
+    } else if (savedTheme === 'light') {
+      root.classList.remove('dark');
+    } else {
+      const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isSystemDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (!loading) {
       if (user) {
         if (location.pathname === '/' || location.pathname === '/auth') {
