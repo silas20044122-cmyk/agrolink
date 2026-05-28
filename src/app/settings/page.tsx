@@ -169,6 +169,17 @@ export default function Settings() {
     saveStateBaseline();
   }, [user]);
 
+  useEffect(() => {
+    const handleThemeChangeFromEvent = () => {
+      const current = localStorage.getItem('agrolink_selected_theme') as any;
+      if (current) {
+        setThemePreference(current);
+      }
+    };
+    window.addEventListener('theme-changed', handleThemeChangeFromEvent);
+    return () => window.removeEventListener('theme-changed', handleThemeChangeFromEvent);
+  }, []);
+
   const saveStateBaseline = () => {
     const raw = JSON.stringify({
       name, email, phone, region, avatarUrl, farmLocation, preferredCrop,
@@ -212,6 +223,7 @@ export default function Settings() {
     setThemePreference(newTheme);
     localStorage.setItem('agrolink_selected_theme', newTheme);
     applyThemePreference(newTheme);
+    window.dispatchEvent(new Event('theme-changed'));
     showToast(`Theme changed to ${newTheme}`, 'info');
   };
 

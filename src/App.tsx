@@ -22,7 +22,7 @@ import SettingsPage from './app/settings/page';
 import About from './pages/About';
 import Solutions from './pages/Solutions';
 import { Badge, Button } from './components/ui/Base';
-import { Bell, User, Settings, LogOut, Menu, X, Sprout, BarChart3, Camera, MessageSquare, CloudSun, TrendingUp, Truck, Sparkles, Plus, Search, Users } from 'lucide-react';
+import { Bell, User, Settings, LogOut, Menu, X, Sprout, BarChart3, Camera, MessageSquare, CloudSun, TrendingUp, Truck, Sparkles, Plus, Search, Users, Sun, Moon, Laptop } from 'lucide-react';
 import { cn } from './lib/utils';
 import { useAuth } from './hooks/useAppData';
 import { useNotifications } from './contexts/NotificationContext';
@@ -121,8 +121,33 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    return (localStorage.getItem('agrolink_selected_theme') as 'light' | 'dark' | 'system') || 'system';
+  });
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+
+  const changeTheme = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    localStorage.setItem('agrolink_selected_theme', newTheme);
+    const root = document.documentElement;
+    if (newTheme === 'dark') {
+      root.classList.add('dark');
+    } else if (newTheme === 'light') {
+      root.classList.remove('dark');
+    } else {
+      const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isSystemDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    }
+    window.dispatchEvent(new Event('theme-changed'));
+  };
+
   useEffect(() => {
-    const savedTheme = localStorage.getItem('agrolink_selected_theme');
+    const savedTheme = localStorage.getItem('agrolink_selected_theme') as 'light' | 'dark' | 'system' || 'system';
+    setTheme(savedTheme);
     const root = document.documentElement;
     if (savedTheme === 'dark') {
       root.classList.add('dark');
@@ -136,6 +161,13 @@ export default function App() {
         root.classList.remove('dark');
       }
     }
+
+    const syncThemeFromStorage = () => {
+      const current = localStorage.getItem('agrolink_selected_theme') as 'light' | 'dark' | 'system' || 'system';
+      setTheme(current);
+    };
+    window.addEventListener('theme-changed', syncThemeFromStorage);
+    return () => window.removeEventListener('theme-changed', syncThemeFromStorage);
   }, []);
 
   useEffect(() => {
@@ -331,7 +363,71 @@ export default function App() {
            )}
          </AnimatePresence>
 
-         <button onClick={() => navigate('/my-farms')} className="lg:hidden w-8 h-8 rounded-lg bg-primary-fresh text-white flex items-center justify-center">
+         {/* Theme Dropdown Toggle */}
+         <div className="relative">
+           <button 
+             className={cn(
+               "p-2 hover:bg-gray-100/55 rounded-full transition-colors relative outline-none cursor-pointer flex items-center justify-center",
+               isThemeMenuOpen && "bg-gray-100"
+             )}
+             onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+             title="Switch Theme"
+             id="theme-toggle-btn"
+           >
+             {theme === 'light' && <Sun size={18} className="text-amber-500" />}
+             {theme === 'dark' && <Moon size={18} className="text-blue-400" />}
+             {theme === 'system' && <Laptop size={18} className="text-gray-500" />}
+           </button>
+
+           <AnimatePresence>
+             {isThemeMenuOpen && (
+               <>
+                 <motion.div 
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   className="fixed inset-0 z-[90]"
+                   onClick={() => setIsThemeMenuOpen(false)}
+                 />
+                 <motion.div
+                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                   animate={{ opacity: 1, y: 0, scale: 1 }}
+                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                   transition={{ duration: 0.15 }}
+                   className="absolute right-0 mt-2 w-32 bg-white border border-gray-100 shadow-xl rounded-2xl z-[100] p-1.5 overflow-hidden"
+                   id="theme-dropdown-menu"
+                 >
+                   <div className="text-[9px] font-black uppercase text-gray-400 tracking-wider px-2.5 py-1 select-none">
+                     Theme Mode
+                   </div>
+                   {[
+                     { id: 'light', label: 'Light', icon: <Sun size={14} className="text-amber-500" /> },
+                     { id: 'dark', label: 'Dark', icon: <Moon size={14} className="text-blue-400" /> },
+                     { id: 'system', label: 'System', icon: <Laptop size={14} className="text-gray-500" /> }
+                   ].map((t) => (
+                     <button
+                       key={t.id}
+                       onClick={() => {
+                         changeTheme(t.id as 'light' | 'dark' | 'system');
+                         setIsThemeMenuOpen(false);
+                       }}
+                       className={cn(
+                         "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-left text-xs font-bold transition-all cursor-pointer outline-none select-none",
+                         theme === t.id 
+                           ? "bg-emerald-50 text-emerald-700" 
+                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                       )}
+                     >
+                       {t.icon}
+                       <span>{t.label}</span>
+                     </button>
+                   ))}
+                 </motion.div>
+               </>
+             )}
+           </AnimatePresence>
+         </div>
+          <button onClick={() => navigate('/my-farms')} className="lg:hidden w-8 h-8 rounded-lg bg-primary-fresh text-white flex items-center justify-center">
             <Plus size={16} />
          </button>
          <button 
