@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -29,10 +29,34 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
   const { crops, loading: cropsLoading } = useCrops(user?.id);
 
   const [isMounted, setIsMounted] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!isMounted || !containerRef.current) return;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          setDimensions({ width, height });
+        }
+      }
+    });
+    
+    resizeObserver.observe(containerRef.current);
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setDimensions({ width: rect.width, height: rect.height });
+    }
+    
+    return () => resizeObserver.disconnect();
+  }, [isMounted]);
 
   // Calculate real stats from user data
   const totalArea = farms.reduce((acc, f) => acc + (parseFloat(f.totalArea) || 0), 0);
@@ -110,9 +134,9 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
              </div>
           </div>
         </div>
-        <div className="w-full h-[250px] md:h-[300px] min-h-[250px] relative min-w-0 min-h-0">
-           {isMounted && (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
+        <div ref={containerRef} className="w-full h-[250px] md:h-[300px] min-h-[250px] relative min-w-0 min-h-0">
+           {isMounted && dimensions.width > 0 && dimensions.height > 0 && (
+              <ResponsiveContainer width={dimensions.width} height={dimensions.height} debounce={50}>
                  <AreaChart data={marketData} margin={{ left: -20 }}>
                     <defs>
                       <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">

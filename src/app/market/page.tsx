@@ -1,6 +1,6 @@
 import { Card, Badge, Button, Input } from '@/src/components/ui/Base';
 import { TrendingUp, MapPin, Search, Filter, ArrowUpRight, ArrowDownRight, Info, ShoppingCart, RefreshCcw, X, Plus, Calendar, ChevronRight, Sparkles, AlertTriangle, CheckCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/src/lib/utils';
@@ -269,6 +269,8 @@ export default function MarketPage({ user }: any) {
   
   const [isMounted, setIsMounted] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     setIsMounted(true);
@@ -276,6 +278,28 @@ export default function MarketPage({ user }: any) {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isMounted || !containerRef.current) return;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          setDimensions({ width, height });
+        }
+      }
+    });
+    
+    resizeObserver.observe(containerRef.current);
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setDimensions({ width: rect.width, height: rect.height });
+    }
+    
+    return () => resizeObserver.disconnect();
+  }, [isMounted]);
 
   const [showSellModal, setShowSellModal] = useState(false);
   const [isListing, setIsListing] = useState(false);
@@ -387,12 +411,12 @@ export default function MarketPage({ user }: any) {
                  <Badge variant="info" className="w-fit">Predicted +4.2%</Badge>
               </div>
 
-              <div className="h-60 md:h-80 w-full relative min-h-[240px] min-w-0 min-h-0">
-                {isMounted && (
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
+              <div ref={containerRef} className="h-60 md:h-80 w-full relative min-h-[240px] min-w-0 min-h-0">
+                {isMounted && dimensions.width > 0 && dimensions.height > 0 && (
+                  <ResponsiveContainer width={dimensions.width} height={dimensions.height} debounce={50}>
                     <AreaChart data={chartData} margin={{ left: -20 }}>
                       <defs>
-                        <linearGradient id="colorPriceMarket" x1="0" y1="1" x2="0" y2="1">
+                        <linearGradient id="colorPriceMarket" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#1B5E20" stopOpacity={0.2}/>
                           <stop offset="95%" stopColor="#1B5E20" stopOpacity={0}/>
                         </linearGradient>
