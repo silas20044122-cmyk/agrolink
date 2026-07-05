@@ -387,9 +387,9 @@ export default function MarketPage({ user }: any) {
                  <Badge variant="info" className="w-fit">Predicted +4.2%</Badge>
               </div>
 
-              <div className="h-60 md:h-80 w-full relative min-h-[240px]">
+              <div className="h-60 md:h-80 w-full relative min-h-[240px] min-w-0 min-h-0">
                 {isMounted && (
-                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                     <AreaChart data={chartData} margin={{ left: -20 }}>
                       <defs>
                         <linearGradient id="colorPriceMarket" x1="0" y1="1" x2="0" y2="1">

@@ -110,9 +110,9 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
              </div>
           </div>
         </div>
-        <div className="flex-1 w-full min-h-[250px] relative">
+        <div className="w-full h-[250px] md:h-[300px] min-h-[250px] relative min-w-0 min-h-0">
            {isMounted && (
-              <ResponsiveContainer width="100%" height="100%" debounce={50}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                  <AreaChart data={marketData} margin={{ left: -20 }}>
                     <defs>
                       <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
