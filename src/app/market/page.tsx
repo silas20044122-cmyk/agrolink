@@ -1,6 +1,6 @@
 import { Card, Badge, Button, Input } from '@/src/components/ui/Base';
 import { TrendingUp, MapPin, Search, Filter, ArrowUpRight, ArrowDownRight, Info, ShoppingCart, RefreshCcw, X, Plus, Calendar, ChevronRight, Sparkles, AlertTriangle, CheckCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/src/lib/utils';
@@ -267,6 +267,16 @@ export default function MarketPage({ user }: any) {
   const { marketPrices, loading } = useMarketData(activeMarket);
   const { crops } = useCrops(user?.id);
   
+  const [isMounted, setIsMounted] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [showSellModal, setShowSellModal] = useState(false);
   const [isListing, setIsListing] = useState(false);
   const [formData, setFormData] = useState({
@@ -378,23 +388,25 @@ export default function MarketPage({ user }: any) {
               </div>
 
               <div className="h-60 md:h-80 w-full relative min-h-[240px]">
-                <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                  <AreaChart data={chartData} margin={{ left: -20 }}>
-                    <defs>
-                      <linearGradient id="colorPriceMarket" x1="0" y1="1" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#1B5E20" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#1B5E20" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94A3B8' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94A3B8' }} domain={['dataMin - 100', 'dataMax + 100']} hide={window.innerWidth < 640} />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
-                    />
-                    <Area type="monotone" dataKey="price" stroke="#1B5E20" strokeWidth={3} fillOpacity={1} fill="url(#colorPriceMarket)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {isMounted && (
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                    <AreaChart data={chartData} margin={{ left: -20 }}>
+                      <defs>
+                        <linearGradient id="colorPriceMarket" x1="0" y1="1" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#1B5E20" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#1B5E20" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94A3B8' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94A3B8' }} domain={['dataMin - 100', 'dataMax + 100']} hide={windowWidth < 640} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
+                      />
+                      <Area type="monotone" dataKey="price" stroke="#1B5E20" strokeWidth={3} fillOpacity={1} fill="url(#colorPriceMarket)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-gray-50">

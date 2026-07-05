@@ -663,18 +663,7 @@ export function useTransport(userId: string | undefined) {
         if (groupsWithMembers.length > 0) {
           setSharedGroups(groupsWithMembers);
         } else {
-          const { data: newGroup } = await supabase
-            .from('shared_delivery_groups')
-            .insert({
-              destination: 'NCPB Kakamega',
-              transportDate: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
-              estimatedSavings: 3500,
-              status: 'planning'
-            })
-            .select()
-            .single();
-          
-          if (newGroup) setSharedGroups([newGroup]);
+          setSharedGroups(DEFAULT_SHARED_GROUPS);
         }
       } else {
          if (groupError) console.error('Error fetching delivery groups:', groupError);

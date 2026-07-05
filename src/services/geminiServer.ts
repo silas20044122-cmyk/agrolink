@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -246,11 +246,11 @@ export async function generateMarketInsight(region: string = "Kenya") {
     config: {
       responseMimeType: "application/json",
       responseSchema: {
-        type: "OBJECT" as any,
+        type: Type.OBJECT,
         properties: {
-          title: { type: "STRING" as any },
-          insight: { type: "STRING" as any },
-          type: { type: "STRING" as any, enum: ["info", "warning", "success"] }
+          title: { type: Type.STRING },
+          insight: { type: Type.STRING },
+          type: { type: Type.STRING, enum: ["info", "warning", "success"] }
         },
         required: ["title", "insight", "type"]
       }
@@ -292,18 +292,18 @@ Respond in a structured way that can be parsed easily. Use English and Swahili t
     config: {
       responseMimeType: "application/json",
       responseSchema: {
-        type: "OBJECT" as any,
+        type: Type.OBJECT,
         properties: {
-          cropName: { type: "STRING" as any },
-          diseaseName: { type: "STRING" as any },
-          healthStatus: { type: "STRING" as any },
-          confidence: { type: "NUMBER" as any },
-          diagnosis: { type: "STRING" as any },
-          treatmentPlanSw: { type: "STRING" as any },
-          treatmentPlanEn: { type: "STRING" as any },
+          cropName: { type: Type.STRING },
+          diseaseName: { type: Type.STRING },
+          healthStatus: { type: Type.STRING },
+          confidence: { type: Type.NUMBER },
+          diagnosis: { type: Type.STRING },
+          treatmentPlanSw: { type: Type.STRING },
+          treatmentPlanEn: { type: Type.STRING },
           immediateActions: {
-            type: "ARRAY" as any,
-            items: { type: "STRING" as any }
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
           }
         },
         required: ["cropName", "healthStatus", "diagnosis", "immediateActions"]

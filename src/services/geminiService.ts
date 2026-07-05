@@ -63,6 +63,14 @@ export async function analyzeCropDisease(imageData: string, mimeType: string) {
   });
 
   if (!response.ok) {
+    try {
+      const errorJson = await response.json();
+      if (errorJson && errorJson.cropName && errorJson.diagnosis) {
+        return errorJson;
+      }
+    } catch {
+      // Ignored, proceed to throw generic error
+    }
     throw new Error("Failed to analyze crop photo.");
   }
 
