@@ -302,7 +302,7 @@ export default function App() {
         <button className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-lg outline-none" onClick={() => setIsSidebarOpen(true)}>
           <Menu size={20} className="text-gray-600" />
         </button>
-        <h1 className="text-sm md:text-lg font-bold font-display truncate">Regional Intelligence</h1>
+        <h1 className="text-sm md:text-lg font-bold font-display truncate">AgroLink Kenya</h1>
       </div>
       
       <div className="flex items-center gap-2 md:gap-4 relative">
