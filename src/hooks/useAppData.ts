@@ -150,6 +150,123 @@ export function useAuth() {
 // Backward compatibility or rename for App.tsx
 export const useMockAuth = useAuth;
 
+const DEFAULT_FARMS: Farm[] = [
+  {
+    id: 'mock-farm-1',
+    farmerId: 'mock-farmer-id',
+    name: 'Kakamega Central Farm',
+    location: 'Kakamega Central',
+    totalArea: '2.5 Acres',
+    county: 'Kakamega',
+    subCounty: 'Central',
+    registrationDate: new Date().toISOString()
+  },
+  {
+    id: 'mock-farm-2',
+    farmerId: 'mock-farmer-id',
+    name: 'Sugarcane Zone',
+    location: 'Mumias West',
+    totalArea: '5.0 Acres',
+    county: 'Kakamega',
+    subCounty: 'Mumias West',
+    registrationDate: new Date().toISOString()
+  }
+];
+
+const DEFAULT_CROPS: Crop[] = [
+  {
+    id: 'mock-crop-1',
+    farmId: 'mock-farm-1',
+    farmerId: 'mock-farmer-id',
+    name: 'Maize',
+    variety: 'H513 High Yield',
+    plantingDate: '2026-04-10',
+    expectedHarvest: '2026-08-15',
+    status: 'healthy',
+    healthScore: 92,
+    location: 'Kakamega Central',
+    area: '1.5 Acres',
+    typeId: 'maize'
+  },
+  {
+    id: 'mock-crop-2',
+    farmId: 'mock-farm-1',
+    farmerId: 'mock-farmer-id',
+    name: 'Beans',
+    variety: 'Rosecoco Premium',
+    plantingDate: '2026-05-15',
+    expectedHarvest: '2026-08-30',
+    status: 'healthy',
+    healthScore: 88,
+    location: 'Kakamega Central',
+    area: '1.0 Acre',
+    typeId: 'beans'
+  }
+];
+
+const DEFAULT_TRANSPORTERS: Transporter[] = [
+  {
+    id: 't-1',
+    name: 'Wekesa Express',
+    phone: '+254711223344',
+    vehicleType: '3-Ton Canter Truck',
+    maxCapacity: '3000 kg',
+    currentLocation: 'Kakamega Town',
+    available: true,
+    rating: 4.8,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 't-2',
+    name: 'Omondi Logistics',
+    phone: '+254722334455',
+    vehicleType: '10-Ton Lorry',
+    maxCapacity: '10000 kg',
+    currentLocation: 'Kisumu',
+    available: true,
+    rating: 4.6,
+    createdAt: new Date().toISOString()
+  }
+];
+
+const DEFAULT_TRANSPORT_REQUESTS: TransportRequest[] = [
+  {
+    id: 'tr-1',
+    farmerId: 'mock-farmer-id',
+    produceType: 'Maize',
+    quantity: 1200,
+    unit: 'kg',
+    pickupLocation: 'Kakamega Central',
+    destination: 'NCPB Kakamega',
+    preferredDate: '2026-07-10',
+    urgency: 'medium',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    estimatedCost: 1800,
+    estimatedSavings: 450
+  }
+];
+
+const DEFAULT_SHARED_GROUPS: SharedDeliveryGroup[] = [
+  {
+    id: 'g-1',
+    destination: 'NCPB Kakamega',
+    transportDate: '2026-07-12',
+    estimatedSavings: 3500,
+    status: 'planning',
+    members: [
+      {
+        id: 'gm-1',
+        groupId: 'g-1',
+        requestId: 'tr-1',
+        farmerId: 'mock-farmer-id',
+        farmerName: 'Silas Omulama',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=silas'
+      }
+    ]
+  }
+];
+
 // useFarms Hook
 export function useFarms(userId: string | undefined) {
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -163,6 +280,23 @@ export function useFarms(userId: string | undefined) {
 
     async function fetchFarms() {
       setLoading(true);
+
+      if (!isSupabaseConfigured) {
+        try {
+          const stored = localStorage.getItem('agrolink_farms');
+          if (stored) {
+            setFarms(JSON.parse(stored));
+          } else {
+            localStorage.setItem('agrolink_farms', JSON.stringify(DEFAULT_FARMS));
+            setFarms(DEFAULT_FARMS);
+          }
+        } catch (e) {
+          setFarms(DEFAULT_FARMS);
+        }
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('farms')
@@ -176,6 +310,12 @@ export function useFarms(userId: string | undefined) {
         }
       } catch (err) {
         console.error('Error fetching farms:', err);
+        try {
+          const stored = localStorage.getItem('agrolink_farms');
+          setFarms(stored ? JSON.parse(stored) : DEFAULT_FARMS);
+        } catch (e) {
+          setFarms(DEFAULT_FARMS);
+        }
       } finally {
         setLoading(false);
       }
@@ -185,6 +325,33 @@ export function useFarms(userId: string | undefined) {
   }, [userId]);
 
   const addFarm = async (newFarm: Partial<Farm>) => {
+    const fakeId = `farm-${Date.now()}`;
+    const farmToAdd: Farm = {
+      id: fakeId,
+      farmerId: userId || 'mock-farmer-id',
+      name: newFarm.name || 'Unnamed Farm',
+      location: newFarm.location || 'Unknown',
+      totalArea: newFarm.totalArea || '0.5 Acres',
+      county: newFarm.county || 'Kakamega',
+      subCounty: newFarm.subCounty || 'Unknown',
+      registrationDate: newFarm.registrationDate || new Date().toISOString()
+    };
+
+    try {
+      const stored = localStorage.getItem('agrolink_farms');
+      const list = stored ? JSON.parse(stored) : [...DEFAULT_FARMS];
+      list.push(farmToAdd);
+      localStorage.setItem('agrolink_farms', JSON.stringify(list));
+    } catch (e) {
+      console.error(e);
+    }
+
+    setFarms(prev => [...prev, farmToAdd]);
+
+    if (!isSupabaseConfigured) {
+      return farmToAdd;
+    }
+
     try {
       const { data, error } = await supabase
         .from('farms')
@@ -192,11 +359,14 @@ export function useFarms(userId: string | undefined) {
         .select();
 
       if (error) throw error;
-      if (data) setFarms(prev => [...prev, data[0]]);
-      return data?.[0];
+      if (data) {
+        setFarms(prev => prev.map(f => f.id === fakeId ? data[0] : f));
+        return data?.[0];
+      }
+      return farmToAdd;
     } catch (err) {
       console.error('Error adding farm:', err);
-      return null;
+      return farmToAdd;
     }
   };
 
@@ -215,6 +385,27 @@ export function useCrops(userId: string | undefined, farmId?: string) {
     
     async function fetchCrops() {
       setLoading(true);
+
+      if (!isSupabaseConfigured) {
+        try {
+          const stored = localStorage.getItem('agrolink_crops');
+          let list = DEFAULT_CROPS;
+          if (stored) {
+            list = JSON.parse(stored);
+          } else {
+            localStorage.setItem('agrolink_crops', JSON.stringify(DEFAULT_CROPS));
+          }
+          if (farmId) {
+            list = list.filter(c => c.farmId === farmId);
+          }
+          setCrops(list);
+        } catch (e) {
+          setCrops(DEFAULT_CROPS);
+        }
+        setLoading(false);
+        return;
+      }
+
       try {
         let query = supabase
           .from('crops')
@@ -234,6 +425,16 @@ export function useCrops(userId: string | undefined, farmId?: string) {
         }
       } catch (err) {
         console.error('Error fetching crops:', err);
+        try {
+          const stored = localStorage.getItem('agrolink_crops');
+          let list = stored ? JSON.parse(stored) : DEFAULT_CROPS;
+          if (farmId) {
+            list = list.filter((c: any) => c.farmId === farmId);
+          }
+          setCrops(list);
+        } catch (e) {
+          setCrops(DEFAULT_CROPS);
+        }
       } finally {
         setLoading(false);
       }
@@ -243,6 +444,37 @@ export function useCrops(userId: string | undefined, farmId?: string) {
   }, [userId, farmId]);
 
   const addCrop = async (newCrop: Partial<Crop>) => {
+    const fakeId = `crop-${Date.now()}`;
+    const cropToAdd: Crop = {
+      id: fakeId,
+      farmId: newCrop.farmId || 'mock-farm-1',
+      farmerId: userId || 'mock-farmer-id',
+      name: newCrop.name || 'Unnamed Crop',
+      variety: newCrop.variety || 'Unknown Variety',
+      plantingDate: newCrop.plantingDate || new Date().toISOString().split('T')[0],
+      expectedHarvest: newCrop.expectedHarvest || new Date(Date.now() + 86400000 * 120).toISOString().split('T')[0],
+      status: newCrop.status || 'planted',
+      healthScore: newCrop.healthScore || 100,
+      location: newCrop.location || 'Kakamega',
+      area: newCrop.area || '1.0 Acre',
+      typeId: newCrop.typeId || 'other'
+    };
+
+    try {
+      const stored = localStorage.getItem('agrolink_crops');
+      const list = stored ? JSON.parse(stored) : [...DEFAULT_CROPS];
+      list.push(cropToAdd);
+      localStorage.setItem('agrolink_crops', JSON.stringify(list));
+    } catch (e) {
+      console.error(e);
+    }
+
+    setCrops(prev => [...prev, cropToAdd]);
+
+    if (!isSupabaseConfigured) {
+      return cropToAdd;
+    }
+
     try {
       const { data, error } = await supabase
         .from('crops')
@@ -250,11 +482,14 @@ export function useCrops(userId: string | undefined, farmId?: string) {
         .select();
       
       if (error) throw error;
-      if (data) setCrops(prev => [...prev, data[0]]);
-      return data?.[0];
+      if (data) {
+        setCrops(prev => prev.map(c => c.id === fakeId ? data[0] : c));
+        return data?.[0];
+      }
+      return cropToAdd;
     } catch (err) {
       console.error('Error adding crop:', err);
-      return null;
+      return cropToAdd;
     }
   };
 
@@ -284,11 +519,6 @@ export function useMarketData(region: string) {
     async function fetchPrices() {
       setLoading(true);
       try {
-        // In a real app, this would be an external API like WFP or a local Agri-exchange
-        // For this implementation, we simulate a real-time fetch with dynamic variations
-        // but we'll structure it to easily point to a real endpoint
-        
-        // Simulating external API response structure
         const response = await new Promise((resolve) => {
           setTimeout(() => {
             const basePrices: any = {
@@ -317,7 +547,6 @@ export function useMarketData(region: string) {
 
             const data = basePrices[region] || basePrices['Nairobi'];
             
-            // Add some real-time flavor (random fluctuation)
             const liveData = data.map((item: any) => ({
               id: `${item.name}-${region}`.toLowerCase().replace(/\s+/g, '-'),
               cropName: item.name,
@@ -341,7 +570,6 @@ export function useMarketData(region: string) {
     }
 
     fetchPrices();
-    // Refresh every 30 seconds for "real-time" feel
     const interval = setInterval(fetchPrices, 30000);
     return () => clearInterval(interval);
   }, [region]);
@@ -362,6 +590,22 @@ export function useTransport(userId: string | undefined) {
     }
 
     setLoading(true);
+
+    if (!isSupabaseConfigured) {
+      try {
+        const stored = localStorage.getItem('agrolink_transport_requests');
+        setRequests(stored ? JSON.parse(stored) : DEFAULT_TRANSPORT_REQUESTS);
+        setTransporters(DEFAULT_TRANSPORTERS);
+        setSharedGroups(DEFAULT_SHARED_GROUPS);
+      } catch (e) {
+        setRequests(DEFAULT_TRANSPORT_REQUESTS);
+        setTransporters(DEFAULT_TRANSPORTERS);
+        setSharedGroups(DEFAULT_SHARED_GROUPS);
+      }
+      setLoading(false);
+      return;
+    }
+
     try {
       // 1. Fetch User's Requests
       const { data: reqData, error: reqError } = await supabase
@@ -397,7 +641,6 @@ export function useTransport(userId: string | undefined) {
         .order('transportDate', { ascending: true });
 
       if (!groupError && groupData) {
-        // Fetch members for each group
         const groupsWithMembers = await Promise.all(groupData.map(async (group) => {
           const { data: memberData } = await supabase
             .from('shared_delivery_group_members')
@@ -420,7 +663,6 @@ export function useTransport(userId: string | undefined) {
         if (groupsWithMembers.length > 0) {
           setSharedGroups(groupsWithMembers);
         } else {
-          // No groups in DB, let's create one for the demo
           const { data: newGroup } = await supabase
             .from('shared_delivery_groups')
             .insert({
@@ -449,6 +691,39 @@ export function useTransport(userId: string | undefined) {
   }, [userId]);
 
   const addRequest = async (newRequest: Partial<TransportRequest>) => {
+    const fakeId = `tr-${Date.now()}`;
+    const reqToAdd: TransportRequest = {
+      id: fakeId,
+      farmerId: userId || 'mock-farmer-id',
+      produceType: newRequest.produceType || 'Maize',
+      quantity: newRequest.quantity || 100,
+      unit: newRequest.unit || 'kg',
+      pickupLocation: newRequest.pickupLocation || 'Kakamega',
+      destination: newRequest.destination || 'NCPB',
+      preferredDate: newRequest.preferredDate || new Date().toISOString().split('T')[0],
+      urgency: newRequest.urgency || 'medium',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      estimatedCost: newRequest.estimatedCost || 1000,
+      estimatedSavings: newRequest.estimatedSavings || 200,
+      notes: newRequest.notes
+    };
+
+    try {
+      const stored = localStorage.getItem('agrolink_transport_requests');
+      const list = stored ? JSON.parse(stored) : [...DEFAULT_TRANSPORT_REQUESTS];
+      list.unshift(reqToAdd);
+      localStorage.setItem('agrolink_transport_requests', JSON.stringify(list));
+    } catch (e) {
+      console.error(e);
+    }
+
+    setRequests(prev => [reqToAdd, ...prev]);
+
+    if (!isSupabaseConfigured) {
+      return reqToAdd;
+    }
+
     try {
       const { data, error } = await supabase
         .from('transport_requests')
@@ -461,15 +736,35 @@ export function useTransport(userId: string | undefined) {
         .select();
 
       if (error) throw error;
-      if (data) setRequests(prev => [data[0], ...prev]);
-      return data?.[0];
+      if (data) {
+        setRequests(prev => prev.map(r => r.id === fakeId ? data[0] : r));
+        return data?.[0];
+      }
+      return reqToAdd;
     } catch (err) {
       console.error('Error adding transport request:', err);
-      return null;
+      return reqToAdd;
     }
   };
 
   const updateRequestStatus = async (requestId: string, status: TransportRequest['status']) => {
+    try {
+      const stored = localStorage.getItem('agrolink_transport_requests');
+      if (stored) {
+        const list: TransportRequest[] = JSON.parse(stored);
+        const updated = list.map(r => r.id === requestId ? { ...r, status } : r);
+        localStorage.setItem('agrolink_transport_requests', JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status } : r));
+
+    if (!isSupabaseConfigured) {
+      return true;
+    }
+
     try {
       const { error } = await supabase
         .from('transport_requests')
@@ -477,7 +772,6 @@ export function useTransport(userId: string | undefined) {
         .eq('id', requestId);
       
       if (error) throw error;
-      setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status } : r));
       return true;
     } catch (err) {
       console.error('Error updating status:', err);

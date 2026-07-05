@@ -158,7 +158,7 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
               variants={{
                 visible: {
                   transition: {
-                    staggerChildren: 0.05,
+                    staggerChildren: 0.08,
                   }
                 },
                 hidden: {
@@ -168,10 +168,10 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
                   }
                 }
               }}
-              className="flex flex-col items-end gap-3 mb-2"
+              className="flex flex-col-reverse items-end gap-3 mb-2"
               id="quick-action-list"
             >
-              {/* Action 1: AI Advisor Chat */}
+              {/* Action 3: Scan a Leaf (First in JSX, Bottom-most visually) */}
               <motion.div
                 variants={{
                   hidden: { opacity: 0, y: 15, scale: 0.8 },
@@ -179,20 +179,20 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
                 }}
                 className="flex items-center gap-2.5 group cursor-pointer"
                 onClick={() => {
-                  navigate('/advisor');
+                  navigate('/scanner');
                   setIsQuickMenuOpen(false);
                 }}
-                id="quick-action-advisor"
+                id="quick-action-scanner"
               >
                 <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100/80 group-hover:bg-primary-dark group-hover:text-white transition-all whitespace-nowrap">
-                  Talk to AI Advisor
+                  Scan Leaf Disease
                 </span>
-                <div className="w-11 h-11 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 active:scale-95">
-                  <MessageSquare size={18} />
+                <div className="w-11 h-11 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 active:scale-95">
+                  <Camera size={18} />
                 </div>
               </motion.div>
 
-              {/* Action 2: Check Market Prices */}
+              {/* Action 2: Check Market Prices (Second in JSX, Middle visually) */}
               <motion.div
                 variants={{
                   hidden: { opacity: 0, y: 15, scale: 0.8 },
@@ -213,7 +213,7 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
                 </div>
               </motion.div>
 
-              {/* Action 3: Scan a Leaf */}
+              {/* Action 1: AI Advisor Chat (Third in JSX, Top-most visually) */}
               <motion.div
                 variants={{
                   hidden: { opacity: 0, y: 15, scale: 0.8 },
@@ -221,16 +221,16 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
                 }}
                 className="flex items-center gap-2.5 group cursor-pointer"
                 onClick={() => {
-                  navigate('/scanner');
+                  navigate('/advisor');
                   setIsQuickMenuOpen(false);
                 }}
-                id="quick-action-scanner"
+                id="quick-action-advisor"
               >
                 <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100/80 group-hover:bg-primary-dark group-hover:text-white transition-all whitespace-nowrap">
-                  Scan Leaf Disease
+                  Talk to AI Advisor
                 </span>
-                <div className="w-11 h-11 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 active:scale-95">
-                  <Camera size={18} />
+                <div className="w-11 h-11 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 active:scale-95">
+                  <MessageSquare size={18} />
                 </div>
               </motion.div>
             </motion.div>
