@@ -9,6 +9,7 @@ export interface UserProfile {
   farmSize?: string;
   avatarUrl?: string;
   phoneNumber?: string;
+  bio?: string;
 }
 
 export interface Farm {

@@ -3,96 +3,168 @@ import { UserProfile, Farm, Crop, Notification, MarketPrice, TransportRequest, T
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+// Shared global state for useAuth
+let globalUser: UserProfile | null = null;
+let globalLoading = true;
+const listeners = new Set<(user: UserProfile | null, loading: boolean) => void>();
+
+function setGlobalState(newUser: UserProfile | null, newLoading: boolean) {
+  globalUser = newUser;
+  globalLoading = newLoading;
+  listeners.forEach((listener) => listener(globalUser, globalLoading));
+}
+
+let isInitializing = false;
+
+async function initializeAuth() {
+  if (isInitializing) return;
+  isInitializing = true;
+
+  if (!isSupabaseConfigured) {
+    let storedUser: UserProfile | null = null;
+    try {
+      storedUser = JSON.parse(localStorage.getItem('agrolink_user_profile') || 'null');
+    } catch (e) {}
+    if (!storedUser) {
+      storedUser = {
+        id: 'mock-farmer-id',
+        name: 'Silas Omulama',
+        email: 'silas20044122@gmail.com',
+        role: 'farmer',
+        region: 'Kakamega',
+        phoneNumber: '+254 712 345 678',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=silas',
+        bio: 'Dedicated farmer from Kakamega county focusing on maize and organic farming.'
+      };
+      localStorage.setItem('agrolink_user_profile', JSON.stringify(storedUser));
+    }
+    setGlobalState(storedUser, false);
+    return;
+  }
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      // Try to fetch profile from farmer_profiles
+      const { data: dbProfile, error: dbError } = await supabase
+        .from('farmer_profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      let profile: UserProfile;
+      if (dbProfile && !dbError) {
+        profile = {
+          id: session.user.id,
+          name: dbProfile.displayName || session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          role: session.user.user_metadata.role || 'farmer',
+          region: dbProfile.location || session.user.user_metadata.region || 'Kakamega',
+          avatarUrl: dbProfile.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
+          phoneNumber: session.user.user_metadata.phoneNumber || dbProfile.phoneNumber || '',
+          bio: dbProfile.bio || ''
+        };
+      } else {
+        profile = {
+          id: session.user.id,
+          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          role: session.user.user_metadata.role || 'farmer',
+          region: session.user.user_metadata.region || 'Kakamega',
+          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
+          phoneNumber: session.user.user_metadata.phoneNumber || '',
+          bio: ''
+        };
+
+        // Create initial database entry
+        await supabase.from('farmer_profiles').upsert({
+          id: session.user.id,
+          displayName: profile.name,
+          avatarUrl: profile.avatarUrl,
+          location: profile.region,
+          bio: profile.bio || '',
+          updatedAt: new Date().toISOString()
+        });
+      }
+      setGlobalState(profile, false);
+    } else {
+      setGlobalState(null, false);
+    }
+  } catch (err) {
+    console.error('Error during auth initialization:', err);
+    setGlobalState(null, false);
+  }
+
+  // Listen for auth changes
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    if (session?.user) {
+      try {
+        const { data: dbProfile } = await supabase
+          .from('farmer_profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        const profile: UserProfile = {
+          id: session.user.id,
+          name: dbProfile?.displayName || session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          role: session.user.user_metadata.role || 'farmer',
+          region: dbProfile?.location || session.user.user_metadata.region || 'Kakamega',
+          avatarUrl: dbProfile?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
+          phoneNumber: session.user.user_metadata.phoneNumber || dbProfile?.phoneNumber || '',
+          bio: dbProfile?.bio || ''
+        };
+        setGlobalState(profile, false);
+      } catch (err) {
+        console.error('Error during auth state change profile fetch:', err);
+      }
+    } else {
+      setGlobalState(null, false);
+    }
+  });
+}
+
 // Real Supabase Auth Hook
 export function useAuth() {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<UserProfile | null>(globalUser);
+  const [loading, setLoading] = useState(globalLoading);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      let storedUser: UserProfile | null = null;
-      try {
-        storedUser = JSON.parse(localStorage.getItem('agrolink_user_profile') || 'null');
-      } catch (e) {}
-      if (!storedUser) {
-        storedUser = {
-          id: 'mock-farmer-id',
-          name: 'Silas Omulama',
-          email: 'silas20044122@gmail.com',
-          role: 'farmer',
-          region: 'Kakamega',
-          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=silas'
-        };
-        localStorage.setItem('agrolink_user_profile', JSON.stringify(storedUser));
-      }
-      setUser(storedUser);
-      setLoading(false);
-      return;
+    const listener = (u: UserProfile | null, l: boolean) => {
+      setUser(u);
+      setLoading(l);
+    };
+    listeners.add(listener);
+
+    if (listeners.size === 1 && globalLoading) {
+      initializeAuth();
+    } else {
+      setUser(globalUser);
+      setLoading(globalLoading);
     }
 
-    // Initial check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        // Map Supabase user to our UserProfile
-        const profile: UserProfile = {
-          id: session.user.id,
-          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          role: session.user.user_metadata.role || 'farmer',
-          region: session.user.user_metadata.region || 'Unknown',
-          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`
-        };
-        setUser(profile);
-
-        // Sync with farmer_profiles
-        supabase.from('farmer_profiles').upsert({
-          id: session.user.id,
-          displayName: profile.name,
-          avatarUrl: profile.avatarUrl,
-          location: profile.region,
-          updatedAt: new Date().toISOString()
-        }).then(({ error }) => {
-           if (error) console.error('Error syncing profile:', error);
-        });
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        const profile: UserProfile = {
-          id: session.user.id,
-          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          role: session.user.user_metadata.role || 'farmer',
-          region: session.user.user_metadata.region || 'Unknown',
-          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`
-        };
-        setUser(profile);
-
-        // Sync with farmer_profiles
-        supabase.from('farmer_profiles').upsert({
-          id: session.user.id,
-          displayName: profile.name,
-          avatarUrl: profile.avatarUrl,
-          location: profile.region,
-          updatedAt: new Date().toISOString()
-        }).then(({ error }) => {
-           if (error) console.error('Error syncing profile:', error);
-        });
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      listeners.delete(listener);
+    };
   }, []);
 
   const login = async (email: string) => {
-    // For demo/prototype, we'll use OTP or just assume signin
-    // Real implementation would use signWithPassword or signInWithOtp
+    if (!isSupabaseConfigured) {
+      const mockProfile: UserProfile = {
+        id: 'mock-farmer-id',
+        name: 'Silas Omulama',
+        email: email,
+        role: 'farmer',
+        region: 'Kakamega',
+        phoneNumber: '+254 712 345 678',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=silas',
+        bio: 'Dedicated farmer from Kakamega county focusing on maize and organic farming.'
+      };
+      localStorage.setItem('agrolink_user_profile', JSON.stringify(mockProfile));
+      setGlobalState(mockProfile, false);
+      return { message: 'Demo sign-in successful!' };
+    }
     const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) throw error;
     return { message: 'Check your email for the login link!' };
@@ -101,50 +173,126 @@ export function useAuth() {
   const logout = async () => {
     if (!isSupabaseConfigured) {
       localStorage.removeItem('agrolink_user_profile');
-      setUser(null);
+      setGlobalState(null, false);
       return;
     }
     await supabase.auth.signOut();
+    setGlobalState(null, false);
   };
 
   const updateProfile = async (updatedData: Partial<UserProfile>) => {
-    if (!user) return;
-    
-    const newProfile = { ...user, ...updatedData };
-    setUser(newProfile);
-    
+    if (!globalUser) return;
+
+    const newProfile = { ...globalUser, ...updatedData };
+    setGlobalState(newProfile, false);
+
     if (!isSupabaseConfigured) {
       localStorage.setItem('agrolink_user_profile', JSON.stringify(newProfile));
       return;
     }
-    
+
     try {
-      const { error } = await supabase.from('customer_profiles').upsert({
+      // 1. Persist metadata in auth for secure retrieval of custom attributes
+      await supabase.auth.updateUser({
+        data: {
+          phoneNumber: newProfile.phoneNumber,
+          region: newProfile.region,
+          full_name: newProfile.name
+        }
+      });
+
+      // 2. Sync with farmer_profiles (strictly using existing schema columns)
+      const { error: farmError } = await supabase.from('farmer_profiles').upsert({
         id: newProfile.id,
         displayName: newProfile.name,
         avatarUrl: newProfile.avatarUrl,
         location: newProfile.region,
-        phoneNumber: newProfile.phoneNumber,
+        bio: newProfile.bio || '',
         updatedAt: new Date().toISOString()
       });
-      if (error) {
-        // Fallback to general farmer_profiles error check
-        const { error: err2 } = await supabase.from('farmer_profiles').upsert({
-          id: newProfile.id,
-          displayName: newProfile.name,
-          avatarUrl: newProfile.avatarUrl,
-          location: newProfile.region,
-          phoneNumber: newProfile.phoneNumber,
-          updatedAt: new Date().toISOString()
-        });
-        if (err2) throw err2;
+
+      if (farmError) {
+        throw farmError;
       }
     } catch (err) {
       console.error('Failed to sync profile change to Supabase:', err);
+      throw err;
     }
   };
 
-  return { user, loading, login, logout, updateProfile };
+  const uploadAvatar = async (file: File): Promise<string> => {
+    if (!globalUser) throw new Error('User not logged in');
+
+    // Client-side validations
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Invalid file type. Only image files are allowed.');
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      throw new Error('File size too large. Maximum allowable size is 2MB.');
+    }
+
+    if (!isSupabaseConfigured) {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const base64String = reader.result as string;
+          try {
+            await updateProfile({ avatarUrl: base64String });
+            resolve(base64String);
+          } catch (e) {
+            reject(new Error('Failed to update local avatar.'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read image file.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${globalUser.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Append cache-busting timestamp
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+      await updateProfile({ avatarUrl: cacheBustedUrl });
+      return cacheBustedUrl;
+    } catch (err: any) {
+      console.warn('Supabase storage upload failed, falling back to base64 encoding:', err);
+      // Fail-safe Base64 conversion
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const base64String = reader.result as string;
+          try {
+            await updateProfile({ avatarUrl: base64String });
+            resolve(base64String);
+          } catch (e) {
+            reject(new Error('Failed to update avatar with fallback base64 encoding.'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file.'));
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  return { user, loading, login, logout, updateProfile, uploadAvatar };
 }
 
 // Backward compatibility or rename for App.tsx
