@@ -1,6 +1,5 @@
 import { motion } from 'motion/react';
 import { 
-  Sprout, 
   Camera, 
   MessageSquare, 
   CloudSun, 
@@ -9,55 +8,19 @@ import {
   Globe2, 
   MapPin,
   ChevronRight,
-  Menu,
-  X
+  Sprout,
 } from 'lucide-react';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/src/components/ui/Base';
+import LandingNavbar from '@/src/components/LandingNavbar';
 
 export default function Landing() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-bg-soft">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 cursor-pointer">
-            <div className="w-10 h-10 bg-primary-dark rounded-xl flex items-center justify-center">
-              <Sprout className="text-white w-6 h-6" />
-            </div>
-            <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgroLink</span>
-          </Link>
-          
-          <div className="hidden md:flex items-center gap-8 font-medium text-gray-600 tracking-tight">
-            <a href="#features" className="hover:text-primary-dark transition-colors">Features</a>
-            <Link to="/solutions" className="hover:text-primary-dark transition-colors">Solutions</Link>
-            <Link to="/about" className="hover:text-primary-dark transition-colors">About</Link>
-            <Button onClick={() => navigate('/auth')} variant="primary" size="md">Get Started</Button>
-          </div>
-
-          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <X /> : <Menu />}
-          </button>
-        </div>
-        
-        {/* Mobile Nav */}
-        {isMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="md:hidden bg-white border-b border-gray-100 p-6 space-y-4"
-          >
-            <a href="#features" className="block text-lg font-medium text-gray-800">Features</a>
-            <Link to="/solutions" className="block text-lg font-medium text-gray-800">Solutions</Link>
-            <Link to="/about" className="block text-lg font-medium text-gray-800" onClick={() => setIsMenuOpen(false)}>About</Link>
-            <Button onClick={() => navigate('/auth')} variant="primary" className="w-full">Get Started</Button>
-          </motion.div>
-        )}
-      </nav>
+      <LandingNavbar />
 
       {/* Hero Section */}
       <section className="pt-40 pb-24 px-6 overflow-hidden">

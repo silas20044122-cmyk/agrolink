@@ -14,7 +14,8 @@ import {
   Activity,
   Search,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/components/ui/Base';
 import { useCrops, useFarms } from '@/src/hooks/useAppData';
@@ -23,6 +24,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function DashboardPage({ user, onSearchClick }: { user: any, onSearchClick?: () => void }) {
   const navigate = useNavigate();
+  const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
   const { farms, loading: farmsLoading } = useFarms(user?.id);
   const { crops, loading: cropsLoading } = useCrops(user?.id);
 
@@ -144,6 +146,120 @@ export default function DashboardPage({ user, onSearchClick }: { user: any, onSe
          </div>
          <Button onClick={() => navigate('/scanner')} className="w-full h-10 md:h-12 bg-primary-fresh hover:bg-white hover:text-primary-dark border-none transition-all text-xs font-bold">Launch Scanner</Button>
       </Card>
+
+      {/* Quick Action Floating Button Menu */}
+      <div className="fixed bottom-24 right-4 lg:bottom-8 lg:right-8 z-45 flex flex-col items-end gap-3" id="quick-action-menu-container">
+        <AnimatePresence>
+          {isQuickMenuOpen && (
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.05,
+                  }
+                },
+                hidden: {
+                  transition: {
+                    staggerChildren: 0.05,
+                    staggerDirection: -1
+                  }
+                }
+              }}
+              className="flex flex-col items-end gap-3 mb-2"
+              id="quick-action-list"
+            >
+              {/* Action 1: AI Advisor Chat */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 15, scale: 0.8 },
+                  visible: { opacity: 1, y: 0, scale: 1 }
+                }}
+                className="flex items-center gap-2.5 group cursor-pointer"
+                onClick={() => {
+                  navigate('/advisor');
+                  setIsQuickMenuOpen(false);
+                }}
+                id="quick-action-advisor"
+              >
+                <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100/80 group-hover:bg-primary-dark group-hover:text-white transition-all whitespace-nowrap">
+                  Talk to AI Advisor
+                </span>
+                <div className="w-11 h-11 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 active:scale-95">
+                  <MessageSquare size={18} />
+                </div>
+              </motion.div>
+
+              {/* Action 2: Check Market Prices */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 15, scale: 0.8 },
+                  visible: { opacity: 1, y: 0, scale: 1 }
+                }}
+                className="flex items-center gap-2.5 group cursor-pointer"
+                onClick={() => {
+                  navigate('/market');
+                  setIsQuickMenuOpen(false);
+                }}
+                id="quick-action-market"
+              >
+                <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100/80 group-hover:bg-primary-dark group-hover:text-white transition-all whitespace-nowrap">
+                  Check Market Prices
+                </span>
+                <div className="w-11 h-11 bg-amber-500 hover:bg-amber-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 active:scale-95">
+                  <TrendingUp size={18} />
+                </div>
+              </motion.div>
+
+              {/* Action 3: Scan a Leaf */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 15, scale: 0.8 },
+                  visible: { opacity: 1, y: 0, scale: 1 }
+                }}
+                className="flex items-center gap-2.5 group cursor-pointer"
+                onClick={() => {
+                  navigate('/scanner');
+                  setIsQuickMenuOpen(false);
+                }}
+                id="quick-action-scanner"
+              >
+                <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100/80 group-hover:bg-primary-dark group-hover:text-white transition-all whitespace-nowrap">
+                  Scan Leaf Disease
+                </span>
+                <div className="w-11 h-11 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 active:scale-95">
+                  <Camera size={18} />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Floating Toggle Button */}
+        <motion.button
+          onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.95 }}
+          className={cn(
+            "w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl cursor-pointer transition-colors duration-300 outline-none z-50 border-none",
+            isQuickMenuOpen 
+              ? "bg-gray-800 hover:bg-gray-900 shadow-gray-800/20" 
+              : "bg-gradient-to-r from-primary-fresh to-primary-dark hover:from-primary-dark hover:to-primary-fresh shadow-primary-fresh/30"
+          )}
+          id="quick-action-toggle-btn"
+          aria-label="Toggle Quick Actions Menu"
+        >
+          <motion.div
+            animate={{ rotate: isQuickMenuOpen ? 135 : 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="flex items-center justify-center"
+          >
+            {isQuickMenuOpen ? <Plus size={24} /> : <Sparkles size={24} />}
+          </motion.div>
+        </motion.button>
+      </div>
     </div>
   );
 }

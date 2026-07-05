@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Routes, Route, useNavigate, useLocation, Navigate, Link, Outlet } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
+import LandingNavbar from './components/LandingNavbar';
 import Dashboard from './app/dashboard/page';
 import MyFarms from './app/my-farms/page';
 import FarmDetails from './app/my-farms/[id]/page';
@@ -209,48 +210,48 @@ export default function App() {
   };
 
   const menuItems = [
-    { id: 'dashboard', path: '/dashboard', icon: <BarChart3 />, label: 'Dashboard' },
-    { id: 'my-farms', path: '/my-farms', icon: <Sprout />, label: 'My Farms' },
-    { id: 'scanner', path: '/scanner', icon: <Camera />, label: 'AI Scanner' },
-    { id: 'advisor', path: '/advisor', icon: <MessageSquare />, label: 'AI Advisor' },
-    { id: 'community', path: '/community', icon: <Users />, label: 'Community' },
-    { id: 'weather', path: '/weather', icon: <CloudSun />, label: 'Weather Intel' },
-    { id: 'market', path: '/market', icon: <TrendingUp />, label: 'Market Prices' },
-    { id: 'transport', path: '/transport', icon: <Truck />, label: 'Transport' },
-    { id: 'settings', path: '/settings', icon: <Settings />, label: 'Settings' },
+    { id: 'dashboard', path: '/dashboard', icon: <BarChart3 size={15} />, label: 'Dashboard' },
+    { id: 'my-farms', path: '/my-farms', icon: <Sprout size={15} />, label: 'My Farms' },
+    { id: 'scanner', path: '/scanner', icon: <Camera size={15} />, label: 'AI Scanner' },
+    { id: 'advisor', path: '/advisor', icon: <MessageSquare size={15} />, label: 'AI Advisor' },
+    { id: 'community', path: '/community', icon: <Users size={15} />, label: 'Community' },
+    { id: 'weather', path: '/weather', icon: <CloudSun size={15} />, label: 'Weather Intel' },
+    { id: 'market', path: '/market', icon: <TrendingUp size={15} />, label: 'Market Prices' },
+    { id: 'transport', path: '/transport', icon: <Truck size={15} />, label: 'Transport' },
+    { id: 'settings', path: '/settings', icon: <Settings size={15} />, label: 'Settings' },
   ];
 
   const sidebar = (
     <aside className={cn(
-      "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 flex flex-col shrink-0 transition-transform duration-300 lg:relative lg:translate-x-0 outline-none",
+      "fixed inset-y-0 left-0 z-50 w-56 bg-white border-r border-gray-100 flex flex-col shrink-0 transition-transform duration-300 lg:relative lg:translate-x-0 outline-none select-none h-screen overflow-hidden",
       isSidebarOpen ? "translate-x-0" : "-translate-x-full"
     )}>
-      <div className="p-6 flex items-center justify-between mb-4">
+      <div className="p-4 flex items-center justify-between mb-1">
         <Link to="/dashboard" className="flex items-center gap-2" onClick={() => setIsSidebarOpen(false)}>
-          <div className="w-8 h-8 bg-primary-fresh rounded-lg flex items-center justify-center">
-            <div className="w-4 h-4 bg-white rounded-full"></div>
+          <div className="w-7 h-7 bg-primary-fresh rounded-lg flex items-center justify-center">
+            <div className="w-3.5 h-3.5 bg-white rounded-full"></div>
           </div>
-          <span className="text-xl font-bold tracking-tight text-primary-dark font-display">AgroLink</span>
+          <span className="text-lg font-bold tracking-tight text-primary-dark font-display">AgroLink</span>
         </Link>
-        <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-gray-400">
-          <X size={20} />
+        <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-1 text-gray-400 hover:text-gray-600">
+          <X size={18} />
         </button>
       </div>
 
-      <div className="px-4 mb-4">
+      <div className="px-3 mb-2">
         <button 
           onClick={() => setIsSearchOpen(true)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-all font-semibold text-sm outline-none border border-gray-100/50"
+          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 transition-all font-semibold text-xs outline-none border border-gray-100/50"
         >
-          <Search size={16} />
+          <Search size={14} />
           <span className="flex-1 text-left">Search...</span>
-          <div className="flex items-center gap-1 p-1 bg-white rounded-md text-[8px] font-black uppercase tracking-widest px-1.5 border border-gray-100">
-            ⌘ K
+          <div className="flex items-center gap-0.5 p-0.5 bg-white rounded text-[7px] font-black uppercase tracking-wider px-1 border border-gray-100">
+            ⌘K
           </div>
         </button>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 space-y-0.5 overflow-y-hidden">
         {menuItems.map((item) => (
           <button
             key={item.id}
@@ -259,51 +260,36 @@ export default function App() {
               setIsSidebarOpen(false);
             }}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm tracking-tight outline-none",
+              "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all duration-150 font-bold text-xs tracking-tight outline-none cursor-pointer",
               location.pathname === item.path 
                 ? "bg-sidebar-active text-primary-dark" 
-                : "text-gray-500 hover:bg-gray-50"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
             )}
           >
-            <span className="w-5 opacity-70 flex justify-center">{item.icon}</span>
+            <span className="w-4.5 opacity-80 flex justify-center shrink-0">{item.icon}</span>
             <span className="capitalize">{item.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-100 pb-20 lg:pb-4">
-        <div className="bg-secondary-ai/5 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2 text-secondary-ai text-xs font-bold uppercase tracking-wider">
-            <Sparkles size={14} /> AI Assistant
-          </div>
-          <p className="text-[11px] text-secondary-ai leading-tight mb-2 italic">
-            "Rain expected in 48h. Prepare drainage for Maize sector."
-          </p>
-          <Button 
-            onClick={() => navigate('/advisor')} 
-            className="w-full py-1.5 h-auto bg-secondary-ai text-white rounded text-[11px] font-bold"
-          >
-            Ask Advisor
-          </Button>
-        </div>
-
+      <div className="p-3 border-t border-gray-100 pb-20 lg:pb-3">
         <div 
-          className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50/50 p-2 -m-2 rounded-xl transition-all"
+          className="flex items-center gap-2.5 cursor-pointer hover:bg-gray-50/50 p-1.5 rounded-lg transition-all"
           onClick={() => navigate('/profile')}
         >
-          <img src={user?.avatarUrl} className="w-8 h-8 rounded-full bg-gray-200" />
+          <img src={user?.avatarUrl} className="w-7 h-7 rounded-full bg-gray-200 object-cover" />
           <div className="flex-1 overflow-hidden">
-            <div className="text-xs font-bold truncate">{user?.name}</div>
-            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{user?.region}, KE</div>
+            <div className="text-[11px] font-bold truncate">{user?.name}</div>
+            <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{user?.region}, KE</div>
           </div>
           <button 
             onClick={(e) => {
               e.stopPropagation();
               handleLogout();
             }} 
-            className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+            className="p-1.5 text-gray-300 hover:text-red-500 transition-colors cursor-pointer border-none bg-transparent"
           >
-            <LogOut size={14} />
+            <LogOut size={13} />
           </button>
         </div>
       </div>
@@ -475,39 +461,17 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/about" element={
-        <div className="flex flex-col h-screen overflow-hidden">
-          <header className="h-20 bg-white border-b border-gray-100 px-6 flex items-center justify-between z-50">
-            <Link to="/" className="flex items-center gap-2 cursor-pointer">
-              <div className="w-10 h-10 bg-primary-dark rounded-xl flex items-center justify-center">
-                <Sprout className="text-white w-6 h-6" />
-              </div>
-              <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgroLink</span>
-            </Link>
-            <div className="flex gap-4">
-               <Button variant="outline" onClick={() => navigate('/solutions')}>Solutions</Button>
-               <Button variant="primary" onClick={() => navigate('/auth')}>Get Started</Button>
-            </div>
-          </header>
-          <div className="flex-1 overflow-y-auto">
+        <div className="min-h-screen bg-bg-soft flex flex-col">
+          <LandingNavbar />
+          <div className="flex-1 pt-24 overflow-y-auto">
             <About />
           </div>
         </div>
       } />
       <Route path="/solutions" element={
-        <div className="flex flex-col h-screen overflow-hidden">
-          <header className="h-20 bg-white border-b border-gray-100 px-6 flex items-center justify-between z-50">
-            <Link to="/" className="flex items-center gap-2 cursor-pointer">
-              <div className="w-10 h-10 bg-primary-dark rounded-xl flex items-center justify-center">
-                <Sprout className="text-white w-6 h-6" />
-              </div>
-              <span className="text-2xl font-bold font-display tracking-tight text-primary-dark">AgroLink</span>
-            </Link>
-            <div className="flex gap-4">
-               <Button variant="outline" onClick={() => navigate('/about')}>About</Button>
-               <Button variant="primary" onClick={() => navigate('/auth')}>Get Started</Button>
-            </div>
-          </header>
-          <div className="flex-1 overflow-y-auto">
+        <div className="min-h-screen bg-bg-soft flex flex-col">
+          <LandingNavbar />
+          <div className="flex-1 pt-24 overflow-y-auto">
             <Solutions />
           </div>
         </div>

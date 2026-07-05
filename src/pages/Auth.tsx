@@ -258,7 +258,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-soft flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-bg-soft flex flex-col items-center justify-center py-8 px-4 sm:px-6 relative overflow-y-auto">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
          <div className="absolute top-10 left-10 w-64 h-64 bg-primary-dark rounded-full mix-blend-multiply filter blur-3xl"></div>
@@ -268,9 +268,9 @@ export default function Auth() {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg z-10"
+        className="w-full max-w-[420px] z-10 py-4"
       >
-        <Card className="p-10 shadow-2xl space-y-8 border-none">
+        <Card className="p-6 sm:p-8 shadow-xl space-y-5 sm:space-y-6 border-none">
           
           <AnimatePresence mode="wait">
             {step === 'auth' ? (
@@ -279,39 +279,39 @@ export default function Auth() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                className="space-y-8"
+                className="space-y-4 sm:space-y-5"
               >
-                <div className="text-center space-y-3 relative">
+                <div className="text-center space-y-2 relative">
                    <button 
                      onClick={() => navigate('/')}
-                     className="absolute left-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary-dark transition-colors"
+                     className="absolute left-0 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-primary-dark transition-colors"
                    >
-                     <ChevronRight className="rotate-180" size={20} />
+                     <ChevronRight className="rotate-180" size={18} />
                    </button>
-                   <div className="w-16 h-16 bg-primary-dark rounded-2xl flex items-center justify-center mx-auto shadow-lg rotate-12">
-                     <Sprout className="text-white w-8 h-8" />
+                   <div className="w-11 h-11 bg-primary-dark rounded-xl flex items-center justify-center mx-auto shadow-md rotate-12">
+                     <Sprout className="text-white w-5.5 h-5.5" />
                    </div>
-                   <h1 className="text-3xl font-bold tracking-tight">AgroLink Platform</h1>
-                   <p className="text-gray-400 text-sm font-medium font-serif italic">Secure Digital Farming Hub for Kenya</p>
+                   <h1 className="text-xl sm:text-2xl font-bold tracking-tight">AgroLink Platform</h1>
+                   <p className="text-gray-400 text-xs font-medium font-serif italic">Secure Digital Farming Hub for Kenya</p>
                 </div>
 
                 {!isSupabaseConfigured && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 items-start shadow-sm">
-                    <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={20} />
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">System Setup Required</p>
-                      <p className="text-[11px] text-amber-600 font-medium">Please set your Supabase URL and Anon Key in the <strong className="text-amber-800">Settings</strong> menu to enable secure authentication and cloud storage.</p>
+                  <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl p-3 flex gap-2.5 items-start shadow-sm">
+                    <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16} />
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">System Setup Required</p>
+                      <p className="text-[11px] text-amber-600 font-medium leading-relaxed">Set your Supabase credentials in the <strong className="text-amber-800">Settings</strong> menu to enable secure Auth and Cloud storage.</p>
                     </div>
                   </div>
                 )}
 
-                <div className="flex bg-gray-50 p-1.5 rounded-2xl">
+                <div className="flex bg-gray-50/70 p-1 rounded-xl">
                   <button 
                     onClick={() => { setIsLogin(true); setError(null); setMessage(null); }}
                     type="button"
                     className={cn(
-                      "flex-1 py-3 text-sm font-bold rounded-xl transition-all uppercase tracking-widest",
-                      isLogin ? "bg-white text-primary-dark shadow-sm" : "text-gray-400"
+                      "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider cursor-pointer",
+                      isLogin ? "bg-white text-primary-dark shadow-sm" : "text-gray-400 hover:text-gray-600"
                     )}
                   >
                     Sign In
@@ -320,8 +320,8 @@ export default function Auth() {
                     onClick={() => { setIsLogin(false); setError(null); setMessage(null); }}
                     type="button"
                     className={cn(
-                      "flex-1 py-3 text-sm font-bold rounded-xl transition-all uppercase tracking-widest",
-                      !isLogin ? "bg-white text-primary-dark shadow-sm" : "text-gray-400"
+                      "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider cursor-pointer",
+                      !isLogin ? "bg-white text-primary-dark shadow-sm" : "text-gray-400 hover:text-gray-600"
                     )}
                   >
                     Register
@@ -329,18 +329,18 @@ export default function Auth() {
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold uppercase tracking-wider border border-red-100 italic">
+                  <div className="bg-red-50 text-red-500 p-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border border-red-100 italic">
                     Error: {error}
                   </div>
                 )}
 
                 {message && (
-                  <div className="bg-green-50 text-green-600 p-4 rounded-xl text-xs font-bold uppercase tracking-wider border border-green-100 italic">
+                  <div className="bg-green-50 text-green-600 p-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border border-green-100 italic">
                     {message}
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3.5">
                   {!isLogin && (
                     <Input 
                       label="Full Name" 
@@ -348,7 +348,7 @@ export default function Auth() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required 
-                      className="bg-white border-gray-100 h-14"
+                      className="bg-white border-gray-100 h-11"
                     />
                   )}
                   <Input 
@@ -358,16 +358,16 @@ export default function Auth() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required 
-                    className="bg-white border-gray-100 h-14"
+                    className="bg-white border-gray-100 h-11"
                   />
                   {!isLogin && (
-                     <div className="space-y-1.5 flex flex-col">
+                     <div className="space-y-1 flex flex-col">
                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Select County</label>
                        <select 
                          value={region}
                          onChange={(e) => setRegion(e.target.value)}
                          required 
-                         className="w-full px-4 h-14 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-fresh focus:border-transparent outline-none text-sm font-medium shadow-sm transition-all"
+                         className="w-full px-4 h-11 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary-fresh focus:border-transparent outline-none text-sm font-medium shadow-sm transition-all cursor-pointer"
                        >
                          {KENYA_COUNTIES.map(county => (
                            <option key={county} value={county}>{county}</option>
@@ -382,14 +382,14 @@ export default function Auth() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required 
-                    className="bg-white border-gray-100 h-14"
+                    className="bg-white border-gray-100 h-11"
                   />
                   {isLogin && (
                     <div className="flex justify-end">
                       <button 
                         type="button" 
                         onClick={() => setMessage('Password reset instructions sent to your email.')}
-                        className="text-[10px] font-bold text-primary-fresh uppercase tracking-widest hover:underline bg-transparent border-none p-0 cursor-pointer"
+                        className="text-[10px] font-bold text-primary-fresh uppercase tracking-wider hover:underline bg-transparent border-none p-0 cursor-pointer"
                       >
                         Forgot Password?
                       </button>
@@ -398,10 +398,10 @@ export default function Auth() {
                   <Button 
                     type="submit" 
                     isLoading={isLoading} 
-                    size="lg" 
-                    className="w-full h-16 text-lg rounded-2xl group shadow-primary-dark/30 mt-6"
+                    className="w-full h-11 sm:h-12 text-sm rounded-xl group shadow-md shadow-primary-fresh/10 mt-3 sm:mt-4 cursor-pointer"
                   >
-                    {isLogin ? 'Enter Dashboard' : 'Create My Account'} <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    <span>{isLogin ? 'Enter Dashboard' : 'Create My Account'}</span> 
+                    <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={15} />
                   </Button>
                 </form>
               </motion.div>
@@ -411,46 +411,46 @@ export default function Auth() {
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-5"
               >
-                <div className="text-center space-y-3">
-                  <div className="w-16 h-16 bg-primary-fresh/10 rounded-2xl flex items-center justify-center mx-auto text-primary-fresh shadow-md">
-                     <ShieldCheck className="w-8 h-8 animate-pulse" />
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-primary-fresh/10 rounded-xl flex items-center justify-center mx-auto text-primary-fresh shadow-sm">
+                     <ShieldCheck className="w-6 h-6 animate-pulse" />
                   </div>
-                  <h2 className="text-2xl font-black text-primary-dark tracking-tight">Verify Your Identity</h2>
+                  <h2 className="text-lg font-black text-primary-dark tracking-tight">Verify Your Identity</h2>
                   <p className="text-xs text-gray-400 font-medium leading-relaxed max-w-sm mx-auto">
                     Two-Factor Authentication is active for this account. Provide your credential code to proceed.
                   </p>
                 </div>
 
                 {mfaError && (
-                  <div className="bg-red-50 border border-red-150 p-4 rounded-xl flex gap-2.5 items-start text-xs font-semibold text-red-800 animate-shake">
+                  <div className="bg-red-50 border border-red-150 p-3 rounded-xl flex gap-2.5 items-start text-xs font-semibold text-red-800">
                     <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
                     <span>{mfaError}</span>
                   </div>
                 )}
 
                 {message && (
-                  <div className="bg-emerald-50 border border-emerald-150 p-4 rounded-xl flex gap-2.5 items-start text-xs font-semibold text-emerald-800">
+                  <div className="bg-emerald-50 border border-emerald-150 p-3 rounded-xl flex gap-2.5 items-start text-xs font-semibold text-emerald-800">
                     <CheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={16} />
                     <span>{message}</span>
                   </div>
                 )}
 
                 {isLocked ? (
-                  <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl text-center space-y-3">
-                    <AlertTriangle className="text-amber-500 mx-auto" size={32} />
+                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center space-y-2">
+                    <AlertTriangle className="text-amber-500 mx-auto" size={24} />
                     <p className="text-xs font-bold text-amber-900 uppercase tracking-wider">Account Security Lockout</p>
-                    <p className="text-xs text-amber-700 font-semibold">
+                    <p className="text-xs text-amber-700 font-semibold leading-relaxed">
                       Account temporarily locked due to multiple incorrect submissions. Please retry in:
                     </p>
-                    <p className="text-4xl font-extrabold text-primary-dark tracking-mono">{lockCountdown}s</p>
+                    <p className="text-3xl font-extrabold text-primary-dark tracking-mono">{lockCountdown}s</p>
                   </div>
                 ) : (
-                  <form onSubmit={handleMfaSubmit} className="space-y-6">
+                  <form onSubmit={handleMfaSubmit} className="space-y-4">
                     
                     {useBackupCode ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <label className="text-xs font-black uppercase tracking-widest text-gray-500 block">Backup Recovery Code</label>
                         <div className="relative">
                           <input
@@ -459,18 +459,18 @@ export default function Auth() {
                             value={backupCode}
                             onChange={(e) => setBackupCode(e.target.value)}
                             required
-                            className="w-full text-center h-14 border border-gray-250 rounded-xl focus:ring-2 focus:ring-primary-fresh focus:border-transparent outline-none font-mono text-base font-bold tracking-wider uppercase"
+                            className="w-full text-center h-11 border border-gray-250 rounded-xl focus:ring-2 focus:ring-primary-fresh focus:border-transparent outline-none font-mono text-sm font-bold tracking-wider uppercase bg-white"
                           />
-                          <Key size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                          <Key size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                         </div>
-                        <p className="text-[10px] text-gray-400 font-medium text-center">
+                        <p className="text-[10px] text-gray-400 font-medium text-center leading-normal">
                           Note: Recovery codes are multi-digit keys that can be consumed once each.
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         <label className="text-xs font-black uppercase tracking-widest text-gray-500 block text-center">6-Digit Security PIN</label>
-                        <div className="flex justify-between gap-2">
+                        <div className="flex justify-between gap-1.5">
                           {mfaPin.map((digit, i) => (
                             <input
                               key={i}
@@ -482,7 +482,7 @@ export default function Auth() {
                               value={digit}
                               onChange={(e) => handlePinChange(e.target.value, i)}
                               onKeyDown={(e) => handleKeyDown(e, i)}
-                              className="w-12 h-14 bg-gray-50 border border-gray-200 focus:border-primary-fresh text-center focus:ring-2 focus:ring-primary-fresh/20 outline-none text-xl font-extrabold rounded-xl transition-all"
+                              className="w-10 h-11 sm:h-12 bg-gray-50 border border-gray-200 focus:border-primary-fresh text-center focus:ring-2 focus:ring-primary-fresh/20 outline-none text-lg font-extrabold rounded-xl transition-all"
                             />
                           ))}
                         </div>
@@ -490,24 +490,24 @@ export default function Auth() {
                     )}
 
                     {/* Remember Browser Device */}
-                    <label className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100/50 transition-colors">
+                    <label className="flex items-start gap-2.5 bg-gray-50 p-2.5 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100/50 transition-colors">
                       <input
                         type="checkbox"
                         checked={rememberDevice}
                         onChange={() => setRememberDevice(!rememberDevice)}
-                        className="rounded border-gray-200 text-primary-fresh focus:ring-primary-fresh"
+                        className="rounded border-gray-200 text-primary-fresh focus:ring-primary-fresh mt-0.5 cursor-pointer"
                       />
                       <div className="space-y-0.5">
                         <span className="text-xs font-bold text-gray-700 block">Trust this device for 30 days</span>
-                        <span className="text-[10px] text-gray-400 font-medium leading-none">Bypass 2FA checks on this machine for the next month.</span>
+                        <span className="text-[10px] text-gray-400 font-medium leading-tight block">Bypass 2FA checks on this machine for the next month.</span>
                       </div>
                     </label>
 
-                    <div className="space-y-3 pt-2">
+                    <div className="space-y-2 pt-1">
                       <Button
                         type="submit"
                         isLoading={isLoading}
-                        className="w-full h-14 rounded-xl text-sm uppercase tracking-wide font-black"
+                        className="w-full h-11 rounded-xl text-xs uppercase tracking-wider font-black cursor-pointer"
                       >
                         Verify Identity
                       </Button>
@@ -521,7 +521,7 @@ export default function Auth() {
                             setBackupCode('');
                             setMfaError(null);
                           }}
-                          className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-primary-fresh hover:underline font-bold"
+                          className="text-[10px] uppercase tracking-wider text-gray-400 hover:text-primary-fresh hover:underline font-bold"
                         >
                           {useBackupCode ? 'Use standard PIN device' : 'Use offline Backup code'}
                         </button>
@@ -529,7 +529,7 @@ export default function Auth() {
                         <button
                           type="button"
                           onClick={handleResendPin}
-                          className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-primary-fresh hover:underline font-bold"
+                          className="text-[10px] uppercase tracking-wider text-gray-400 hover:text-primary-fresh hover:underline font-bold"
                         >
                           Resend Code
                         </button>
@@ -538,7 +538,7 @@ export default function Auth() {
                   </form>
                 )}
 
-                <div className="border-t border-gray-100 pt-4 flex justify-center">
+                <div className="border-t border-gray-100 pt-3 flex justify-center">
                   <button
                     type="button"
                     onClick={() => {
@@ -546,7 +546,7 @@ export default function Auth() {
                       setError(null);
                       setMessage(null);
                     }}
-                    className="text-xs text-gray-400 hover:text-gray-600 underline font-semibold uppercase tracking-wider"
+                    className="text-[10px] text-gray-400 hover:text-gray-600 underline font-semibold uppercase tracking-wider"
                   >
                     ← Back to credentials login
                   </button>
@@ -555,16 +555,16 @@ export default function Auth() {
             )}
           </AnimatePresence>
           
-          <p className="text-center text-xs text-gray-400 font-medium">
+          <p className="text-center text-[11px] text-gray-400 font-medium leading-relaxed">
              By continuing, you agree to AgroLink's <br/>
-             <a href="#" className="text-primary-dark underline">Data Protection Terms</a> & <a href="#" className="text-primary-dark underline">Farm Policy</a>
+             <a href="#" className="text-primary-dark underline hover:text-primary-fresh">Data Protection Terms</a> & <a href="#" className="text-primary-dark underline hover:text-primary-fresh">Farm Policy</a>
           </p>
         </Card>
 
         {/* Technical Support */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-gray-400">
-           <Phone size={14} />
-           <p className="text-[10px] font-bold uppercase tracking-widest">Support Line: +254 0800 123 456</p>
+        <div className="mt-4 flex items-center justify-center gap-2 text-gray-400">
+           <Phone size={13} />
+           <p className="text-[9px] font-bold uppercase tracking-widest">Support Line: +254 0800 123 456</p>
         </div>
       </motion.div>
     </div>
