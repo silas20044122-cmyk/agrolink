@@ -85,7 +85,7 @@ export default function Landing() {
           >
             <div className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white">
               <img 
-                src="/src/assets/images/landing_hero_graphic_1783669590366.jpg" 
+                src="/images/landing_hero_graphic.jpg" 
                 alt="AgroLink Digital Agriculture"
                 className="w-full h-auto aspect-[4/5] object-cover"
                 referrerPolicy="no-referrer"
