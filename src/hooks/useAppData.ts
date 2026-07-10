@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { UserProfile, Farm, Crop, Notification, MarketPrice, TransportRequest, Transporter, SharedDeliveryGroup } from '../types';
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { ProfileService } from '../services/profileService';
 
 // Shared global state for useAuth
 let globalUser: UserProfile | null = null;
@@ -23,8 +24,13 @@ async function initializeAuth() {
   if (!isSupabaseConfigured) {
     let storedUser: UserProfile | null = null;
     try {
-      storedUser = JSON.parse(localStorage.getItem('agrolink_user_profile') || 'null');
-    } catch (e) {}
+      const savedEmail = localStorage.getItem('agrolink_logged_in_email');
+      if (savedEmail) {
+        storedUser = await ProfileService.getProfile(savedEmail);
+      }
+    } catch (e) {
+      console.error('Failed to initialize mock user from database:', e);
+    }
     if (!storedUser) {
       storedUser = {
         id: 'mock-farmer-id',
@@ -36,7 +42,12 @@ async function initializeAuth() {
         avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=silas',
         bio: 'Dedicated farmer from Kakamega county focusing on maize and organic farming.'
       };
-      localStorage.setItem('agrolink_user_profile', JSON.stringify(storedUser));
+      localStorage.setItem('agrolink_logged_in_email', 'silas20044122@gmail.com');
+      try {
+        await ProfileService.updateProfile(storedUser.id, storedUser);
+      } catch (e) {
+        console.error('Failed to write initial mock user to filesystem db:', e);
+      }
     }
     setGlobalState(storedUser, false);
     return;
@@ -45,46 +56,20 @@ async function initializeAuth() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      // Try to fetch profile from farmer_profiles
-      const { data: dbProfile, error: dbError } = await supabase
-        .from('farmer_profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      let profile: UserProfile;
-      if (dbProfile && !dbError) {
+      const email = session.user.email || '';
+      let profile = await ProfileService.getProfile(email);
+      if (!profile) {
         profile = {
           id: session.user.id,
-          name: dbProfile.displayName || session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          role: session.user.user_metadata.role || 'farmer',
-          region: dbProfile.location || session.user.user_metadata.region || 'Kakamega',
-          avatarUrl: dbProfile.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
-          phoneNumber: session.user.user_metadata.phoneNumber || dbProfile.phoneNumber || '',
-          bio: dbProfile.bio || ''
-        };
-      } else {
-        profile = {
-          id: session.user.id,
-          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
+          name: session.user.user_metadata.full_name || email.split('@')[0] || 'User',
+          email: email,
           role: session.user.user_metadata.role || 'farmer',
           region: session.user.user_metadata.region || 'Kakamega',
           avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
           phoneNumber: session.user.user_metadata.phoneNumber || '',
           bio: ''
         };
-
-        // Create initial database entry
-        await supabase.from('farmer_profiles').upsert({
-          id: session.user.id,
-          displayName: profile.name,
-          avatarUrl: profile.avatarUrl,
-          location: profile.region,
-          bio: profile.bio || '',
-          updatedAt: new Date().toISOString()
-        });
+        await ProfileService.updateProfile(profile.id, profile);
       }
       setGlobalState(profile, false);
     } else {
@@ -99,22 +84,21 @@ async function initializeAuth() {
   supabase.auth.onAuthStateChange(async (_event, session) => {
     if (session?.user) {
       try {
-        const { data: dbProfile } = await supabase
-          .from('farmer_profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        const profile: UserProfile = {
-          id: session.user.id,
-          name: dbProfile?.displayName || session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          role: session.user.user_metadata.role || 'farmer',
-          region: dbProfile?.location || session.user.user_metadata.region || 'Kakamega',
-          avatarUrl: dbProfile?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
-          phoneNumber: session.user.user_metadata.phoneNumber || dbProfile?.phoneNumber || '',
-          bio: dbProfile?.bio || ''
-        };
+        const email = session.user.email || '';
+        let profile = await ProfileService.getProfile(email);
+        if (!profile) {
+          profile = {
+            id: session.user.id,
+            name: session.user.user_metadata.full_name || email.split('@')[0] || 'User',
+            email: email,
+            role: session.user.user_metadata.role || 'farmer',
+            region: session.user.user_metadata.region || 'Kakamega',
+            avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
+            phoneNumber: session.user.user_metadata.phoneNumber || '',
+            bio: ''
+          };
+          await ProfileService.updateProfile(profile.id, profile);
+        }
         setGlobalState(profile, false);
       } catch (err) {
         console.error('Error during auth state change profile fetch:', err);
@@ -151,17 +135,30 @@ export function useAuth() {
 
   const login = async (email: string) => {
     if (!isSupabaseConfigured) {
+      try {
+        const profile = await ProfileService.getProfile(email);
+        if (profile) {
+          localStorage.setItem('agrolink_logged_in_email', email.toLowerCase().trim());
+          setGlobalState(profile, false);
+          return { message: 'Demo sign-in successful!' };
+        }
+      } catch (err) {
+        console.error('Failed to sync login with server:', err);
+      }
+
       const mockProfile: UserProfile = {
-        id: 'mock-farmer-id',
-        name: 'Silas Omulama',
-        email: email,
+        id: `mock-id-${email.toLowerCase().replace(/[^a-zA-Z0-9]/g, '')}`,
+        name: email.split('@')[0],
+        email: email.toLowerCase().trim(),
         role: 'farmer',
         region: 'Kakamega',
         phoneNumber: '+254 712 345 678',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=silas',
+        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
         bio: 'Dedicated farmer from Kakamega county focusing on maize and organic farming.'
       };
-      localStorage.setItem('agrolink_user_profile', JSON.stringify(mockProfile));
+      
+      await ProfileService.updateProfile(mockProfile.id, mockProfile);
+      localStorage.setItem('agrolink_logged_in_email', email.toLowerCase().trim());
       setGlobalState(mockProfile, false);
       return { message: 'Demo sign-in successful!' };
     }
@@ -172,50 +169,27 @@ export function useAuth() {
 
   const logout = async () => {
     if (!isSupabaseConfigured) {
-      localStorage.removeItem('agrolink_user_profile');
+      localStorage.removeItem('agrolink_logged_in_email');
       setGlobalState(null, false);
       return;
     }
-    await supabase.auth.signOut();
-    setGlobalState(null, false);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Error during signOut:', err);
+    } finally {
+      setGlobalState(null, false);
+    }
   };
 
   const updateProfile = async (updatedData: Partial<UserProfile>) => {
     if (!globalUser) return;
 
-    const newProfile = { ...globalUser, ...updatedData };
-    setGlobalState(newProfile, false);
-
-    if (!isSupabaseConfigured) {
-      localStorage.setItem('agrolink_user_profile', JSON.stringify(newProfile));
-      return;
-    }
-
     try {
-      // 1. Persist metadata in auth for secure retrieval of custom attributes
-      await supabase.auth.updateUser({
-        data: {
-          phoneNumber: newProfile.phoneNumber,
-          region: newProfile.region,
-          full_name: newProfile.name
-        }
-      });
-
-      // 2. Sync with farmer_profiles (strictly using existing schema columns)
-      const { error: farmError } = await supabase.from('farmer_profiles').upsert({
-        id: newProfile.id,
-        displayName: newProfile.name,
-        avatarUrl: newProfile.avatarUrl,
-        location: newProfile.region,
-        bio: newProfile.bio || '',
-        updatedAt: new Date().toISOString()
-      });
-
-      if (farmError) {
-        throw farmError;
-      }
+      const updatedProfile = await ProfileService.updateProfile(globalUser.id, updatedData);
+      setGlobalState(updatedProfile, false);
     } catch (err) {
-      console.error('Failed to sync profile change to Supabase:', err);
+      console.error('Failed to sync profile change:', err);
       throw err;
     }
   };
@@ -223,72 +197,16 @@ export function useAuth() {
   const uploadAvatar = async (file: File): Promise<string> => {
     if (!globalUser) throw new Error('User not logged in');
 
-    // Client-side validations
-    if (!file.type.startsWith('image/')) {
-      throw new Error('Invalid file type. Only image files are allowed.');
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      throw new Error('File size too large. Maximum allowable size is 2MB.');
-    }
-
-    if (!isSupabaseConfigured) {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const base64String = reader.result as string;
-          try {
-            await updateProfile({ avatarUrl: base64String });
-            resolve(base64String);
-          } catch (e) {
-            reject(new Error('Failed to update local avatar.'));
-          }
-        };
-        reader.onerror = () => reject(new Error('Failed to read image file.'));
-        reader.readAsDataURL(file);
-      });
-    }
-
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${globalUser.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      const { data, error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Append cache-busting timestamp
-      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
-      await updateProfile({ avatarUrl: cacheBustedUrl });
-      return cacheBustedUrl;
+      const uploadedUrl = await ProfileService.uploadAvatar(file, globalUser.id);
+      
+      // Update the profile's avatarUrl column/attribute in storage and set state
+      await updateProfile({ avatarUrl: uploadedUrl });
+      
+      return uploadedUrl;
     } catch (err: any) {
-      console.warn('Supabase storage upload failed, falling back to base64 encoding:', err);
-      // Fail-safe Base64 conversion
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const base64String = reader.result as string;
-          try {
-            await updateProfile({ avatarUrl: base64String });
-            resolve(base64String);
-          } catch (e) {
-            reject(new Error('Failed to update avatar with fallback base64 encoding.'));
-          }
-        };
-        reader.onerror = () => reject(new Error('Failed to read file.'));
-        reader.readAsDataURL(file);
-      });
+      console.error('Avatar upload process failed:', err);
+      throw err;
     }
   };
 

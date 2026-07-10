@@ -124,25 +124,98 @@ app.post("/api/settings/2fa/disable", (req, res) => {
   return res.json({ success: true, message: "Two-Factor authentication has been deactivated." });
 });
 
+import fs from "fs";
+import path from "path";
+
+// Define directories & filesystem database file
+const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
+const DB_PATH = path.join(process.cwd(), "mock_db.json");
+
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// Serve uploaded profile pictures statically over HTTP
+app.use("/uploads", express.static(UPLOADS_DIR));
+
+// Read from database file or fallback to default
+function readProfilesDb(): Record<string, any> {
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+    }
+  } catch (err) {
+    console.error("Error reading profiles database file:", err);
+  }
+  
+  // Default fallback profiles
+  return {
+    "silas20044122@gmail.com": {
+      id: "mock-farmer-id",
+      name: "Silas Omulama",
+      email: "silas20044122@gmail.com",
+      role: "farmer",
+      region: "Kakamega",
+      phoneNumber: "+254 712 345 678",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=silas",
+      bio: "Dedicated farmer from Kakamega county focusing on maize and organic farming."
+    }
+  };
+}
+
+// Write updates to database file
+function writeProfilesDb(db: Record<string, any>) {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf8");
+  } catch (err) {
+    console.error("Error writing profiles database file:", err);
+  }
+}
+
 // Upload Profile Picture Endpoint
 app.post("/api/settings/upload-profile-picture", (req, res) => {
-  const { imageBase64 } = req.body;
+  const { imageBase64, userId } = req.body;
   if (!imageBase64) {
     return res.status(400).json({ success: false, message: "Profile photo byte stream data is missing." });
   }
-  
-  // Estimate byte size from Base64 string length
-  const approxBytes = (imageBase64.length * 3) / 4;
-  const mbSizing = approxBytes / (1024 * 1024);
-  if (mbSizing > 5) {
-    return res.status(400).json({ success: false, message: "Payload size limits violated (Maximum allowable is 5MB)." });
-  }
 
-  return res.json({ 
-    success: true, 
-    message: "Custom profile picture saved successfully.", 
-    avatarUrl: imageBase64 
-  });
+  try {
+    // Validate payload size
+    const approxBytes = (imageBase64.length * 3) / 4;
+    const mbSizing = approxBytes / (1024 * 1024);
+    if (mbSizing > 5) {
+      return res.status(400).json({ success: false, message: "Payload size limits violated (Maximum allowable is 5MB)." });
+    }
+
+    let base64Data = imageBase64;
+    let extension = "png";
+
+    // Extract mime type and base64 data correctly
+    const matches = imageBase64.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+    if (matches && matches.length === 3) {
+      extension = matches[1];
+      base64Data = matches[2];
+    }
+
+    // Generate safe, distinct filename
+    const filename = `avatar-${userId || "farmer"}-${Date.now()}.${extension}`;
+    const filepath = path.join(UPLOADS_DIR, filename);
+
+    // Save image to disk
+    fs.writeFileSync(filepath, Buffer.from(base64Data, "base64"));
+
+    // Publicly accessible URL on this Express server
+    const publicUrl = `/uploads/${filename}`;
+
+    return res.json({ 
+      success: true, 
+      message: "Custom profile picture saved successfully.", 
+      avatarUrl: publicUrl 
+    });
+  } catch (err: any) {
+    console.error("Failed to write uploaded image file:", err);
+    return res.status(500).json({ success: false, message: `Failed to save image: ${err?.message || "Unknown error"}` });
+  }
 });
 
 // Delete Custom Profile Picture Endpoint
@@ -156,10 +229,54 @@ app.post("/api/settings/switch-avatar-source", (req, res) => {
   return res.json({ success: true, source, message: `Profile identity source set to ${source}.` });
 });
 
+app.get("/api/profile", (req, res) => {
+  const { email } = req.query;
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ success: false, message: "Email query param is required." });
+  }
+  
+  const normalizedEmail = email.toLowerCase().trim();
+  const db = readProfilesDb();
+  let profile = db[normalizedEmail];
+  
+  if (!profile) {
+    profile = {
+      id: `mock-id-${normalizedEmail.replace(/[^a-zA-Z0-9]/g, "")}`,
+      name: normalizedEmail.split("@")[0],
+      email: normalizedEmail,
+      role: "farmer",
+      region: "Kakamega",
+      phoneNumber: "+254 712 345 678",
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${normalizedEmail}`,
+      bio: ""
+    };
+    db[normalizedEmail] = profile;
+    writeProfilesDb(db);
+  }
+  return res.json({ success: true, profile });
+});
+
+app.post("/api/profile", (req, res) => {
+  const { profile } = req.body;
+  if (!profile || !profile.email) {
+    return res.status(400).json({ success: false, message: "Profile with email is required." });
+  }
+  
+  const normalizedEmail = profile.email.toLowerCase().trim();
+  const db = readProfilesDb();
+  db[normalizedEmail] = {
+    ...db[normalizedEmail],
+    ...profile,
+    updatedAt: new Date().toISOString()
+  };
+  writeProfilesDb(db);
+  return res.json({ success: true, profile: db[normalizedEmail] });
+});
+
 // Fresh Recovery Backup codes generation Endpoint
 app.post("/api/settings/generate-recovery-codes", (req, res) => {
   const codes = Array.from({ length: 5 }, () => 
-    Math.floor(1000 + Math.random() * 9000) + '-' + Math.floor(1000 + Math.random() * 9000)
+    Math.floor(1000 + Math.random() * 9000) + "-" + Math.floor(1000 + Math.random() * 9000)
   );
   return res.json({ success: true, backupCodes: codes });
 });

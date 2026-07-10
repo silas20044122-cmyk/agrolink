@@ -159,6 +159,27 @@ export default function Settings() {
 
   // Initializing settings and theme preferences
   useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phoneNumber || '');
+      setRegion(user.region || 'Kakamega');
+      setFarmLocation(user.region || 'Kakamega');
+      if (user.avatarUrl) {
+        setAvatarUrl(user.avatarUrl);
+        const isCustom = user.avatarUrl.startsWith('data:') || user.avatarUrl.includes('/avatars/') || user.avatarUrl.includes('/uploads/') || !user.avatarUrl.includes('dicebear.com');
+        if (isCustom) {
+          setAvatarSource('custom');
+          setCustomAvatarData(user.avatarUrl);
+          localStorage.setItem('agrolink_avatar_source', 'custom');
+          localStorage.setItem('agrolink_custom_avatar_data', user.avatarUrl);
+        } else {
+          setAvatarSource('dicebear');
+          localStorage.setItem('agrolink_avatar_source', 'dicebear');
+        }
+      }
+    }
+
     // Attempt load theme from storage
     const localTheme = localStorage.getItem('agrolink_selected_theme') as any;
     if (localTheme) {
@@ -724,8 +745,12 @@ export default function Settings() {
   const handleDeactivateAccount = () => {
     if (window.confirm('Temporarily freeze crop telemetry, alert messaging, and secure access? You can log back in later to restore settings.')) {
       showToast('Account successfully deactivated. Logging out...', 'info');
-      setTimeout(() => {
-        logout();
+      setTimeout(async () => {
+        try {
+          await logout();
+        } catch (err) {
+          console.error('Error during logout:', err);
+        }
         window.location.href = '/';
       }, 1500);
     }
@@ -738,11 +763,15 @@ export default function Settings() {
     }
 
     setDeletingProgress(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setDeletingProgress(false);
       setShowDeleteModal(false);
       alert('Your AgroLink customer profile, historical farm telemetry, connected crop sensors, database logs, and credentials have been permanently deleted across the primary cloud storage networks. We are sorry to see you go!');
-      logout();
+      try {
+        await logout();
+      } catch (err) {
+        console.error('Error during logout:', err);
+      }
       window.location.href = '/';
     }, 2000);
   };
@@ -1536,7 +1565,7 @@ export default function Settings() {
                                             const response = await fetch('/api/settings/upload-profile-picture', {
                                               method: 'POST',
                                               headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({ imageBase64: base64payload })
+                                              body: JSON.stringify({ imageBase64: base64payload, userId: user?.id })
                                             });
                                             const data = await response.json();
                                             if (data.success) {
@@ -1546,6 +1575,10 @@ export default function Settings() {
                                               
                                               localStorage.setItem('agrolink_avatar_source', 'custom');
                                               localStorage.setItem('agrolink_custom_avatar_data', data.avatarUrl);
+                                              
+                                              // Update global user profile and backend immediately!
+                                              await updateProfile({ avatarUrl: data.avatarUrl });
+                                              
                                               showToast('✓ Photo successfully cropped & uploaded!');
                                             } else {
                                               showToast(data.message || 'MFA pictures fail.', 'error');

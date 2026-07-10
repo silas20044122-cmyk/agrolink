@@ -204,8 +204,12 @@ export default function App() {
     );
   }
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Error in handleLogout:', err);
+    }
     navigate('/');
   };
 

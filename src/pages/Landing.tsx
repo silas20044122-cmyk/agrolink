@@ -34,17 +34,17 @@ export default function Landing() {
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-fresh/10 rounded-full text-primary-dark font-bold text-xs uppercase tracking-widest">
               <Globe2 size={16} /> Now Live across East Africa
             </div>
-            <h1 className="text-6xl md:text-7xl font-bold leading-[1.1] text-gray-900 tracking-tight">
+            <h1 className="text-5xl md:text-6xl font-bold leading-[1.1] text-gray-900 tracking-tight">
               Digitizing <span className="text-primary-fresh italic font-serif">Agriculture</span> with Artificial Intelligence.
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl leading-relaxed">
+            <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
               AgroLink empowers smallholder farmers in Kenya with AI-driven crop monitoring, disease detection, and real-time market insights. Grow smarter, sell better.
             </p>
             <div className="flex flex-col sm:flex-row gap-5 justify-center md:justify-start">
               <Button 
                 onClick={() => navigate('/auth')} 
                 size="lg" 
-                className="h-16 px-10 text-lg rounded-2xl group relative overflow-hidden shadow-xl shadow-primary-fresh/20 hover:shadow-primary-fresh/40 transition-all duration-300 transform hover:-translate-y-1"
+                className="h-14 px-8 text-base rounded-2xl group relative overflow-hidden shadow-xl shadow-primary-fresh/20 hover:shadow-primary-fresh/40 transition-all duration-300 transform hover:-translate-y-1"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Launch Dashboard <ChevronRight className="group-hover:translate-x-1 transition-transform" />
@@ -54,25 +54,25 @@ export default function Landing() {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="h-16 px-10 text-lg rounded-2xl bg-white/50 backdrop-blur-sm border-gray-200 hover:bg-white hover:border-primary-fresh/30 transition-all duration-300 transform hover:-translate-y-1"
+                className="h-14 px-8 text-base rounded-2xl bg-white/50 backdrop-blur-sm border-gray-200 hover:bg-white hover:border-primary-fresh/30 transition-all duration-300 transform hover:-translate-y-1"
               >
                 View Demo Video
               </Button>
             </div>
             <div className="flex items-center justify-center md:justify-start gap-8 pt-8">
               <div className="text-center md:text-left">
-                <p className="text-3xl font-bold text-primary-dark">50k+</p>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Farmers Active</p>
+                <p className="text-2xl font-bold text-primary-dark">50k+</p>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Farmers Active</p>
               </div>
               <div className="h-10 w-[1px] bg-gray-200"></div>
               <div className="text-center md:text-left">
-                <p className="text-3xl font-bold text-primary-dark">98%</p>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">AI Accuracy</p>
+                <p className="text-2xl font-bold text-primary-dark">98%</p>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">AI Accuracy</p>
               </div>
               <div className="h-10 w-[1px] bg-gray-200"></div>
               <div className="text-center md:text-left">
-                <p className="text-3xl font-bold text-primary-dark">20+</p>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Regions Supported</p>
+                <p className="text-2xl font-bold text-primary-dark">20+</p>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Regions Supported</p>
               </div>
             </div>
           </motion.div>
@@ -85,13 +85,14 @@ export default function Landing() {
           >
             <div className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white">
               <img 
-                src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=2600&auto=format&fit=crop" 
-                alt="Kenyan Farmer using phone"
+                src="/src/assets/images/landing_hero_graphic_1783669590366.jpg" 
+                alt="AgroLink Digital Agriculture"
                 className="w-full h-auto aspect-[4/5] object-cover"
+                referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/80 to-transparent flex flex-col justify-end p-8 text-white">
-                <p className="text-2xl font-serif italic">"AgroLink saved my maize crop this season with its disease scanner."</p>
-                <p className="mt-2 font-bold">— Mary W., Kakamega County</p>
+                <p className="text-xl font-serif italic">"AgroLink saved my maize crop this season with its disease scanner."</p>
+                <p className="mt-2 text-sm font-bold">— Mary W., Kakamega County</p>
               </div>
             </div>
             
@@ -99,15 +100,15 @@ export default function Landing() {
             <motion.div 
               animate={{ y: [0, -20, 0] }}
               transition={{ repeat: Infinity, duration: 4 }}
-              className="absolute -top-10 -right-10 bg-white p-6 rounded-3xl shadow-xl z-20 border border-gray-50"
+              className="absolute -top-10 -right-10 bg-white p-5 rounded-3xl shadow-xl z-20 border border-gray-50"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary-fresh/20 rounded-2xl flex items-center justify-center">
-                  <TrendingUp className="text-primary-fresh" />
+                <div className="w-10 h-10 bg-primary-fresh/20 rounded-2xl flex items-center justify-center">
+                  <TrendingUp className="text-primary-fresh" size={18} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Market Price</p>
-                  <p className="text-xl font-bold text-gray-800">Maize +12%</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Market Price</p>
+                  <p className="text-lg font-bold text-gray-800">Maize +12%</p>
                 </div>
               </div>
             </motion.div>
@@ -133,8 +134,8 @@ export default function Landing() {
       <section id="features" className="py-24 px-6 bg-white">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center space-y-4">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">Total Agricultural Intelligence</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto text-lg">One platform to monitor your farm, predict risks, and connect with profitable markets.</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Total Agricultural Intelligence</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto text-base">One platform to monitor your farm, predict risks, and connect with profitable markets.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -149,11 +150,11 @@ export default function Landing() {
                 whileHover={{ y: -10 }}
                 className="p-8 rounded-[2rem] bg-bg-soft hover:bg-primary-fresh/5 transition-all border border-transparent hover:border-primary-fresh/20"
               >
-                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary-dark mb-6">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary-dark mb-6">
                   {f.icon}
                 </div>
-                <h3 className="text-xl font-bold mb-3">{f.title}</h3>
-                <p className="text-gray-600 leading-relaxed text-sm">{f.desc}</p>
+                <h3 className="text-lg font-bold mb-3">{f.title}</h3>
+                <p className="text-gray-600 leading-relaxed text-xs">{f.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -164,8 +165,8 @@ export default function Landing() {
       <section className="py-24 bg-primary-dark text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-primary-fresh opacity-10 blur-[100px]"></div>
         <div className="max-w-7xl mx-auto px-6 text-center space-y-8 relative z-10">
-          <Sprout className="w-16 h-16 mx-auto text-primary-fresh" />
-          <h2 className="text-5xl md:text-6xl font-serif italic leading-tight">"Revolutionizing how Africa feeds itself, one farmer at a time."</h2>
+          <Sprout className="w-14 h-14 mx-auto text-primary-fresh" />
+          <h2 className="text-4xl md:text-5xl font-serif italic leading-tight">"Revolutionizing how Africa feeds itself, one farmer at a time."</h2>
           <div className="flex items-center justify-center gap-4">
             <div className="w-12 h-12 rounded-full border-2 border-primary-fresh p-1">
               <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Officer" className="rounded-full" />
@@ -180,10 +181,10 @@ export default function Landing() {
 
       {/* Simple CTA */}
       <section className="py-24 px-6 bg-white">
-        <div className="max-w-3xl mx-auto text-center space-y-8 bg-primary-fresh/10 p-12 rounded-[3.5rem] border border-primary-fresh/20">
-          <h2 className="text-4xl font-bold">Ready to grow your productivity?</h2>
-          <p className="text-gray-600 text-lg">Join thousands of Kenyan farmers using AgroLink today. It's free to start.</p>
-          <Button onClick={() => navigate('/auth')} size="lg" className="h-16 px-12 text-lg rounded-2xl">Create Your Farmer Account</Button>
+        <div className="max-w-3xl mx-auto text-center space-y-6 bg-primary-fresh/10 p-10 rounded-[3.5rem] border border-primary-fresh/20">
+          <h2 className="text-3xl font-bold">Ready to grow your productivity?</h2>
+          <p className="text-gray-600 text-base">Join thousands of Kenyan farmers using AgroLink today. It's free to start.</p>
+          <Button onClick={() => navigate('/auth')} size="lg" className="h-14 px-10 text-base rounded-2xl">Create Your Farmer Account</Button>
         </div>
       </section>
 
