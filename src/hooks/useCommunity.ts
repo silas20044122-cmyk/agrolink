@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+const isUuid = (str: string | undefined): boolean => {
+  if (!str) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export interface FarmerProfile {
   id: string;
   displayName: string;
@@ -283,7 +289,7 @@ export function useCommunity(userId: string | undefined) {
         let merged = [...localPosts.filter(lp => !postsData.some(p => p.id === lp.id)), ...postsData];
         merged = merged.filter(p => !deletedPostIds.includes(p.id));
         
-        if (userId) {
+        if (userId && isUuid(userId)) {
           // Fetch likes for these posts by current user
           const postIds = merged.map(p => p.id);
           const { data: likesData } = await supabase
@@ -310,8 +316,8 @@ export function useCommunity(userId: string | undefined) {
         }
         setPosts(filteredPosts);
       }
-    } catch (err) {
-      console.error('Error fetching community posts, falling back:', err);
+    } catch (err: any) {
+      console.warn('Error fetching community posts, falling back:', err?.message || err);
       let filteredPosts = [...localPosts, ...DEFAULT_POSTS];
       filteredPosts = filteredPosts.filter(p => !deletedPostIds.includes(p.id));
       if (category && category !== 'All') {

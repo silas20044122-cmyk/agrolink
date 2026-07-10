@@ -47,7 +47,7 @@ export default function Landing() {
                 className="h-14 px-8 text-base rounded-2xl group relative overflow-hidden shadow-xl shadow-primary-fresh/20 hover:shadow-primary-fresh/40 transition-all duration-300 transform hover:-translate-y-1"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Launch Dashboard <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+                  Get Started <ChevronRight className="group-hover:translate-x-1 transition-transform" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-dark/0 via-white/10 to-primary-dark/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
               </Button>

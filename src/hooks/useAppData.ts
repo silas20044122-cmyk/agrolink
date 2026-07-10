@@ -4,6 +4,12 @@ import { UserProfile, Farm, Crop, Notification, MarketPrice, TransportRequest, T
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ProfileService } from '../services/profileService';
 
+export const isUuid = (str: string | undefined): boolean => {
+  if (!str) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 // Shared global state for useAuth
 let globalUser: UserProfile | null = null;
 let globalLoading = true;
@@ -347,7 +353,7 @@ export function useFarms(userId: string | undefined) {
     async function fetchFarms() {
       setLoading(true);
 
-      if (!isSupabaseConfigured) {
+      if (!isSupabaseConfigured || !isUuid(userId)) {
         try {
           const stored = localStorage.getItem('agrolink_farms');
           if (stored) {
@@ -374,8 +380,8 @@ export function useFarms(userId: string | undefined) {
         if (data) {
           setFarms(data);
         }
-      } catch (err) {
-        console.error('Error fetching farms:', err);
+      } catch (err: any) {
+        console.warn('Gracefully handling farm fetching issue, falling back to local storage:', err?.message || err);
         try {
           const stored = localStorage.getItem('agrolink_farms');
           setFarms(stored ? JSON.parse(stored) : DEFAULT_FARMS);
@@ -409,12 +415,12 @@ export function useFarms(userId: string | undefined) {
       list.push(farmToAdd);
       localStorage.setItem('agrolink_farms', JSON.stringify(list));
     } catch (e) {
-      console.error(e);
+      console.warn(e);
     }
 
     setFarms(prev => [...prev, farmToAdd]);
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !isUuid(userId)) {
       return farmToAdd;
     }
 
@@ -430,8 +436,8 @@ export function useFarms(userId: string | undefined) {
         return data?.[0];
       }
       return farmToAdd;
-    } catch (err) {
-      console.error('Error adding farm:', err);
+    } catch (err: any) {
+      console.warn('Error adding farm to Supabase:', err?.message || err);
       return farmToAdd;
     }
   };
@@ -452,7 +458,7 @@ export function useCrops(userId: string | undefined, farmId?: string) {
     async function fetchCrops() {
       setLoading(true);
 
-      if (!isSupabaseConfigured) {
+      if (!isSupabaseConfigured || !isUuid(userId) || (farmId && !isUuid(farmId))) {
         try {
           const stored = localStorage.getItem('agrolink_crops');
           let list = DEFAULT_CROPS;
@@ -489,8 +495,8 @@ export function useCrops(userId: string | undefined, farmId?: string) {
         if (data) {
           setCrops(data);
         }
-      } catch (err) {
-        console.error('Error fetching crops:', err);
+      } catch (err: any) {
+        console.warn('Gracefully handling crop fetching issue, falling back to local storage:', err?.message || err);
         try {
           const stored = localStorage.getItem('agrolink_crops');
           let list = stored ? JSON.parse(stored) : DEFAULT_CROPS;
@@ -532,12 +538,12 @@ export function useCrops(userId: string | undefined, farmId?: string) {
       list.push(cropToAdd);
       localStorage.setItem('agrolink_crops', JSON.stringify(list));
     } catch (e) {
-      console.error(e);
+      console.warn(e);
     }
 
     setCrops(prev => [...prev, cropToAdd]);
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !isUuid(userId) || (newCrop.farmId && !isUuid(newCrop.farmId))) {
       return cropToAdd;
     }
 
@@ -553,8 +559,8 @@ export function useCrops(userId: string | undefined, farmId?: string) {
         return data?.[0];
       }
       return cropToAdd;
-    } catch (err) {
-      console.error('Error adding crop:', err);
+    } catch (err: any) {
+      console.warn('Error adding crop to Supabase:', err?.message || err);
       return cropToAdd;
     }
   };
@@ -657,7 +663,7 @@ export function useTransport(userId: string | undefined) {
 
     setLoading(true);
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !isUuid(userId)) {
       try {
         const stored = localStorage.getItem('agrolink_transport_requests');
         setRequests(stored ? JSON.parse(stored) : DEFAULT_TRANSPORT_REQUESTS);
@@ -683,7 +689,7 @@ export function useTransport(userId: string | undefined) {
       if (!reqError && reqData) {
         setRequests(reqData);
       } else if (reqError) {
-        console.error('Error fetching transport requests:', reqError);
+        console.warn('Error fetching transport requests:', reqError);
       }
 
       // 2. Fetch Available Transporters
@@ -697,7 +703,7 @@ export function useTransport(userId: string | undefined) {
       if (!transError && transData && transData.length > 0) {
         setTransporters(transData);
       } else {
-        if (transError) console.error('Error fetching transporters:', transError);
+        if (transError) console.warn('Error fetching transporters:', transError);
       }
 
       // 3. Fetch Shared Delivery Groups
@@ -732,10 +738,10 @@ export function useTransport(userId: string | undefined) {
           setSharedGroups(DEFAULT_SHARED_GROUPS);
         }
       } else {
-         if (groupError) console.error('Error fetching delivery groups:', groupError);
+         if (groupError) console.warn('Error fetching delivery groups:', groupError);
       }
-    } catch (err) {
-      console.error('Error in fetchTransportData:', err);
+    } catch (err: any) {
+      console.warn('Error in fetchTransportData:', err?.message || err);
     } finally {
       setLoading(false);
     }
@@ -770,12 +776,12 @@ export function useTransport(userId: string | undefined) {
       list.unshift(reqToAdd);
       localStorage.setItem('agrolink_transport_requests', JSON.stringify(list));
     } catch (e) {
-      console.error(e);
+      console.warn(e);
     }
 
     setRequests(prev => [reqToAdd, ...prev]);
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !isUuid(userId)) {
       return reqToAdd;
     }
 
@@ -796,8 +802,8 @@ export function useTransport(userId: string | undefined) {
         return data?.[0];
       }
       return reqToAdd;
-    } catch (err) {
-      console.error('Error adding transport request:', err);
+    } catch (err: any) {
+      console.warn('Error adding transport request to Supabase:', err?.message || err);
       return reqToAdd;
     }
   };
@@ -811,12 +817,12 @@ export function useTransport(userId: string | undefined) {
         localStorage.setItem('agrolink_transport_requests', JSON.stringify(updated));
       }
     } catch (e) {
-      console.error(e);
+      console.warn(e);
     }
 
     setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status } : r));
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !isUuid(userId)) {
       return true;
     }
 
@@ -828,8 +834,8 @@ export function useTransport(userId: string | undefined) {
       
       if (error) throw error;
       return true;
-    } catch (err) {
-      console.error('Error updating status:', err);
+    } catch (err: any) {
+      console.warn('Error updating status in Supabase:', err?.message || err);
       return false;
     }
   };

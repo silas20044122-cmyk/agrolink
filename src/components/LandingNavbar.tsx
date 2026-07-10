@@ -199,7 +199,7 @@ export default function LandingNavbar() {
             size="md"
             className="rounded-xl px-5 h-11 bg-primary-fresh text-white font-bold text-sm tracking-tight transition-all duration-300 hover:bg-primary-dark hover:scale-[1.03] active:scale-[0.98] shadow-md shadow-primary-fresh/10 hover:shadow-lg hover:shadow-primary-fresh/20 flex items-center gap-1.5 border-none cursor-pointer"
           >
-            <span>Launch Platform</span>
+            <span>Get Started</span>
             <ChevronRight size={15} />
           </Button>
         </div>

@@ -214,6 +214,46 @@ Timeline: Within 7 days
 Cost: KES 2,500
 Expected Outcome: Improved vegetative growth"`;
 
+const MODELS_TO_TRY = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+
+export async function callWithFallbackAndRetry<T>(
+  fn: (model: string) => Promise<T>,
+  retriesPerModel: number = 2,
+  delay: number = 1000
+): Promise<T> {
+  let lastError: any = null;
+  
+  for (const model of MODELS_TO_TRY) {
+    let attempts = retriesPerModel;
+    while (attempts >= 0) {
+      try {
+        return await fn(model);
+      } catch (err: any) {
+        lastError = err;
+        const errMsg = String(err?.message || err || '');
+        const errStatus = String(err?.status || '');
+        const isTransient = 
+          errMsg.includes('503') || 
+          errMsg.includes('UNAVAILABLE') || 
+          errMsg.includes('high demand') ||
+          errStatus === 'UNAVAILABLE' ||
+          err?.code === 503;
+
+        if (isTransient && attempts > 0) {
+          console.warn(`Gemini API returned transient error (503/UNAVAILABLE) for model ${model}. Retrying in ${delay}ms... (${attempts} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          attempts--;
+        } else {
+          console.warn(`Model ${model} failed with: ${errMsg}. Trying fallback model if available...`);
+          break;
+        }
+      }
+    }
+  }
+  
+  throw lastError || new Error("All Gemini models failed.");
+}
+
 export async function getAgroLinkChatStream(
   message: string,
   history: { role: 'user' | 'model', parts: [{ text: string }] }[],
@@ -222,15 +262,16 @@ export async function getAgroLinkChatStream(
   const ai = getGeminiClient();
   const dynamicPrompt = `${SYSTEM_PROMPT}\n\n${context ? `USER CONTEXT:\n${context}` : ''}`;
   
-  const chat = ai.chats.create({
-    model: "gemini-3.5-flash",
-    config: {
-      systemInstruction: dynamicPrompt,
-    },
-    history: history.slice(-10), // Keep last 10 messages for context
+  return callWithFallbackAndRetry((model) => {
+    const chat = ai.chats.create({
+      model: model,
+      config: {
+        systemInstruction: dynamicPrompt,
+      },
+      history: history.slice(-10), // Keep last 10 messages for context
+    });
+    return chat.sendMessageStream({ message });
   });
-
-  return chat.sendMessageStream({ message });
 }
 
 export async function generateMarketInsight(region: string = "Kenya") {
@@ -241,8 +282,8 @@ export async function generateMarketInsight(region: string = "Kenya") {
     Keep it under 30 words.
     Format: JSON { "title": "...", "insight": "...", "type": "info" | "warning" | "success" }`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+    const response = await callWithFallbackAndRetry((model) => ai.models.generateContent({
+      model: model,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -256,7 +297,7 @@ export async function generateMarketInsight(region: string = "Kenya") {
           required: ["title", "insight", "type"]
         }
       }
-    });
+    }));
 
     return JSON.parse(response.text || "{}");
   } catch (e: any) {
@@ -330,14 +371,21 @@ export async function analyzeCropDisease(imageData: string, mimeType: string) {
 5. Suggest immediate actions the farmer should take.
 Respond in a structured way that can be parsed easily. Use English and Swahili translations for key terms.`;
 
-    // Strip the "data:image/...;base64," prefix if it exists
+    // Strip the "data:image/...;base64," prefix if it exists and extract actual mimeType
     const base64Data = imageData.includes(",") ? imageData.split(",")[1] : imageData;
+    let detectedMimeType = mimeType;
+    if (imageData.startsWith("data:")) {
+      const match = imageData.match(/^data:([^;]+);base64,/);
+      if (match) {
+        detectedMimeType = match[1];
+      }
+    }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+    const response = await callWithFallbackAndRetry((model) => ai.models.generateContent({
+      model: model,
       contents: {
         parts: [
-          { inlineData: { data: base64Data, mimeType } },
+          { inlineData: { data: base64Data, mimeType: detectedMimeType } },
           { text: prompt }
         ]
       },
@@ -361,7 +409,7 @@ Respond in a structured way that can be parsed easily. Use English and Swahili t
           required: ["cropName", "healthStatus", "diagnosis", "immediateActions"]
         }
       }
-    });
+    }));
 
     return JSON.parse(response.text || "{}");
   } catch (e: any) {
