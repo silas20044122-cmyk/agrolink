@@ -53,7 +53,7 @@ export async function generateMarketInsight(region: string = "Kenya") {
   return response.json();
 }
 
-export async function analyzeCropDisease(imageData: string, mimeType: string) {
+export async function analyzeCropDisease(imageData: string | string[], mimeType?: string | string[]) {
   const response = await fetch("/api/gemini/analyze-crop-disease", {
     method: "POST",
     headers: {

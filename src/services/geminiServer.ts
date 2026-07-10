@@ -360,10 +360,27 @@ export async function generateMarketInsight(region: string = "Kenya") {
   }
 }
 
-export async function analyzeCropDisease(imageData: string, mimeType: string) {
+export async function analyzeCropDisease(imageData: string | string[], mimeType: string | string[] = "image/jpeg") {
   try {
     const ai = getGeminiClient();
-    const prompt = `Analyze this crop image. 
+    const imageList = Array.isArray(imageData) ? imageData : [imageData];
+    const mimeList = Array.isArray(mimeType) ? mimeType : [mimeType];
+
+    const parts: any[] = [];
+    for (let i = 0; i < imageList.length; i++) {
+      const img = imageList[i];
+      const base64Data = img.includes(",") ? img.split(",")[1] : img;
+      let detectedMimeType = mimeList[i] || mimeList[0] || "image/jpeg";
+      if (img.startsWith("data:")) {
+        const match = img.match(/^data:([^;]+);base64,/);
+        if (match) {
+          detectedMimeType = match[1];
+        }
+      }
+      parts.push({ inlineData: { data: base64Data, mimeType: detectedMimeType } });
+    }
+
+    const prompt = `Analyze the provided crop image(s). ${imageList.length > 1 ? "The user uploaded multiple images of the same plant or field showing different parts (e.g. leaf close-ups, whole plant, stem). Look at all of them to make a comprehensive diagnosis." : ""}
 1. Identify the crop.
 2. Identify any visible diseases or pests.
 3. Provide a localized treatment plan or management advice.
@@ -371,23 +388,12 @@ export async function analyzeCropDisease(imageData: string, mimeType: string) {
 5. Suggest immediate actions the farmer should take.
 Respond in a structured way that can be parsed easily. Use English and Swahili translations for key terms.`;
 
-    // Strip the "data:image/...;base64," prefix if it exists and extract actual mimeType
-    const base64Data = imageData.includes(",") ? imageData.split(",")[1] : imageData;
-    let detectedMimeType = mimeType;
-    if (imageData.startsWith("data:")) {
-      const match = imageData.match(/^data:([^;]+);base64,/);
-      if (match) {
-        detectedMimeType = match[1];
-      }
-    }
+    parts.push({ text: prompt });
 
     const response = await callWithFallbackAndRetry((model) => ai.models.generateContent({
       model: model,
       contents: {
-        parts: [
-          { inlineData: { data: base64Data, mimeType: detectedMimeType } },
-          { text: prompt }
-        ]
+        parts: parts
       },
       config: {
         responseMimeType: "application/json",

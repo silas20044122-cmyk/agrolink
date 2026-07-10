@@ -8,24 +8,72 @@ import { useNotifications } from '@/src/contexts/NotificationContext';
 
 export default function Scanner() {
   const { addNotification } = useNotifications();
-  const [image, setImage] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-        setResult(null);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newImages: string[] = [];
+      let loadedCount = 0;
+      const fileList = Array.from(files);
+      
+      fileList.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newImages.push(reader.result as string);
+          loadedCount++;
+          if (loadedCount === fileList.length) {
+            setImages((prev) => [...prev, ...newImages]);
+            setResult(null);
+            setError(null);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const newImages: string[] = [];
+      let loadedCount = 0;
+      const fileList = Array.from(files).filter(file => file.type.startsWith("image/"));
+      
+      if (fileList.length === 0) return;
+
+      fileList.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newImages.push(reader.result as string);
+          loadedCount++;
+          if (loadedCount === fileList.length) {
+            setImages((prev) => [...prev, ...newImages]);
+            setResult(null);
+            setError(null);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
@@ -49,8 +97,14 @@ export default function Scanner() {
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(videoRef.current, 0, 0);
       const data = canvas.toDataURL('image/jpeg');
-      setImage(data);
-      stopCamera();
+      setImages((prev) => [...prev, data]);
+      setResult(null);
+      setError(null);
+      addNotification({
+        title: "Photo Captured!",
+        message: `Staged image #${images.length + 1} for diagnosis.`,
+        type: "success"
+      });
     }
   };
 
@@ -63,14 +117,14 @@ export default function Scanner() {
   };
 
   const runAnalysis = async () => {
-    if (!image) return;
+    if (images.length === 0) return;
     setIsAnalyzing(true);
     setError(null);
     try {
-      const res = await analyzeCropDisease(image, 'image/jpeg');
+      const res = await analyzeCropDisease(images);
       setResult(res);
       
-      const isHealthy = res.healthStatus.toLowerCase().includes('healthy');
+      const isHealthy = res.healthStatus?.toLowerCase().includes('healthy') ?? false;
       addNotification({
         title: isHealthy ? 'Crop Scan Complete' : 'Disease Detected!',
         message: isHealthy 
@@ -79,29 +133,44 @@ export default function Scanner() {
         type: isHealthy ? 'success' : 'warning',
       });
     } catch (err) {
-      setError("AI analysis failed. Please try again with a clearer photo.");
+      setError("AI analysis failed. Please try again with clearer photos.");
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleReset = () => {
+    setImages([]);
+    setResult(null);
+    setError(null);
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 p-4 md:p-6 pb-24 md:pb-6">
       <div className="text-center space-y-1 md:space-y-2">
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight">AI Crop Scanner</h2>
-        <p className="text-gray-500 text-xs md:text-sm font-medium max-w-lg mx-auto">Identify diseases and get expert treatment advice instantly.</p>
+        <p className="text-gray-500 text-xs md:text-sm font-medium max-w-lg mx-auto">Upload multiple photos to diagnose pests, diseases, or nutritional deficiencies.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         {/* Left: Input */}
         <div className="space-y-4 md:space-y-6">
-          <Card className={cn(
-            "relative aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-200 bg-gray-50/50 overflow-hidden rounded-2xl md:rounded-[2.5rem]",
-            image && "border-solid border-primary-fresh/20"
-          )}>
+          <div 
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={cn(
+              "bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden transition-all duration-300 relative aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-200 bg-gray-50/50 rounded-2xl md:rounded-[2.5rem] transition-all duration-200 p-4",
+              isDragging && "border-primary-fresh bg-primary-fresh/5 scale-[1.02]",
+              images.length > 0 && "border-solid border-primary-fresh/20 bg-white"
+            )}
+          >
             {showCamera ? (
-              <div className="w-full h-full relative">
+              <div className="w-full h-full relative rounded-xl overflow-hidden">
                 <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full text-xs text-white font-medium">
+                  Staged Photos: {images.length}
+                </div>
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4">
                   <Button variant="accent" size="icon" className="w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl" onClick={capturePhoto}>
                     <Camera size={28} />
@@ -111,11 +180,50 @@ export default function Scanner() {
                   </Button>
                 </div>
               </div>
-            ) : image ? (
-              <div className="w-full h-full relative group">
-                <img src={image} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                  <Button variant="primary" size="sm" className="rounded-xl" onClick={() => setImage(null)}>Change Photo</Button>
+            ) : images.length > 0 ? (
+              <div className="w-full h-full flex flex-col justify-between space-y-4">
+                {/* Images staged count header */}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Staged Photos ({images.length})</p>
+                  <button onClick={handleReset} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">Clear All</button>
+                </div>
+
+                {/* Staged images grid */}
+                <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 gap-3 max-h-[75%]">
+                  {images.map((img, idx) => (
+                    <div key={idx} className="relative aspect-square group rounded-xl overflow-hidden border border-gray-100 bg-gray-50 shadow-sm">
+                      <img src={img} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors shadow-md"
+                        title="Remove image"
+                      >
+                        <X size={12} />
+                      </button>
+                      <div className="absolute bottom-2 left-2 bg-black/40 backdrop-blur-sm text-white text-[9px] px-2 py-0.5 rounded-full font-medium">
+                        Photo #{idx + 1}
+                      </div>
+                    </div>
+                  ))}
+                  {images.length < 6 && (
+                    <div 
+                      className="border-2 border-dashed border-gray-200 hover:border-primary-fresh/40 bg-gray-50/50 hover:bg-primary-fresh/5 transition-all rounded-xl aspect-square flex flex-col items-center justify-center p-4 cursor-pointer gap-1.5"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="text-gray-400" size={16} />
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Add Image</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom utility controls */}
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" size="sm" className="flex-1 h-10 rounded-xl text-xs font-bold border-gray-200" onClick={startCamera}>
+                    <Camera className="mr-1.5" size={14} /> Capture Photo
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 h-10 rounded-xl text-xs font-bold border-gray-200" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="mr-1.5" size={14} /> Upload Photo
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -124,8 +232,8 @@ export default function Scanner() {
                   <Camera size={32} />
                 </div>
                 <div className="space-y-1">
-                   <p className="font-bold text-base md:text-lg">Select Crop Image</p>
-                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-relaxed">Leaf or Stems recommended</p>
+                   <p className="font-bold text-base md:text-lg">Select Crop Images</p>
+                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-relaxed">Leaf, stem, or root photos recommended</p>
                 </div>
                 <div className="flex flex-col gap-3">
                   <Button variant="primary" className="h-12 md:h-14 rounded-xl md:rounded-2xl text-sm font-bold" onClick={startCamera}>
@@ -135,19 +243,19 @@ export default function Scanner() {
                     <Upload className="mr-2" size={16} /> Phone Gallery
                   </Button>
                 </div>
-                <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" multiple className="hidden" />
               </div>
             )}
-          </Card>
+          </div>
 
-          {image && !result && !isAnalyzing && (
+          {images.length > 0 && !result && !isAnalyzing && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <Button 
                 variant="accent" 
                 className="w-full h-14 md:h-16 text-sm md:text-lg rounded-xl md:rounded-2xl shadow-lg shadow-accent-amber/20 font-bold uppercase tracking-widest"
                 onClick={runAnalysis}
               >
-                <Sparkles className="mr-2" /> Start AI Analysis
+                <Sparkles className="mr-2" /> Start AI Analysis ({images.length})
               </Button>
             </motion.div>
           )}
@@ -157,7 +265,7 @@ export default function Scanner() {
               <RefreshCcw className="w-8 h-8 md:w-10 md:h-10 animate-spin text-primary-fresh mx-auto" />
               <div className="space-y-1">
                 <p className="font-bold text-sm md:text-base text-primary-dark tracking-tight">AI Intelligence Scanning...</p>
-                <p className="text-[10px] md:text-xs text-gray-500 font-medium">Validating disease patterns against global database.</p>
+                <p className="text-[10px] md:text-xs text-gray-500 font-medium">Analyzing multiple visual angles for diagnostic correlation.</p>
               </div>
             </div>
           )}
@@ -183,7 +291,7 @@ export default function Scanner() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                        <h3 className="text-xl md:text-2xl font-bold">{result.cropName}</h3>
-                       <Badge variant={result.healthStatus.toLowerCase().includes('healthy') ? 'success' : 'error'} className="text-[10px]">
+                       <Badge variant={result.healthStatus?.toLowerCase().includes('healthy') ? 'success' : 'error'} className="text-[10px]">
                          {result.healthStatus}
                        </Badge>
                     </div>
@@ -214,7 +322,7 @@ export default function Scanner() {
                   </div>
                 </div>
 
-                <Button variant="primary" className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl text-xs md:text-sm font-bold" onClick={() => { setImage(null); setResult(null); }}>
+                <Button variant="primary" className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl text-xs md:text-sm font-bold" onClick={handleReset}>
                    Analyze Another Crop
                 </Button>
               </Card>
