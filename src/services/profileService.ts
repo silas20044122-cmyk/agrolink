@@ -41,15 +41,40 @@ export class SupabaseProfileRepository implements UserProfileRepository {
         return null;
       }
 
+      let avatarUrl = dbProfile.avatarUrl;
+      if (dbProfile.avatar_path) {
+        const parts = dbProfile.avatar_path.split('/');
+        const bucket = parts[0];
+        const filePath = parts.slice(1).join('/');
+        const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+        avatarUrl = data.publicUrl;
+      }
+
+      if (!avatarUrl) {
+        avatarUrl = dbProfile.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${dbProfile.id}`;
+      }
+
       return {
         id: dbProfile.id,
-        name: dbProfile.displayName || session.user.user_metadata.full_name || email.split('@')[0],
+        name: dbProfile.full_name || dbProfile.displayName || session.user.user_metadata.full_name || email.split('@')[0],
         email: email,
         role: session.user.user_metadata.role || 'farmer',
-        region: dbProfile.location || 'Kakamega',
-        avatarUrl: dbProfile.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${dbProfile.id}`,
-        phoneNumber: dbProfile.phoneNumber || session.user.user_metadata.phoneNumber || '',
-        bio: dbProfile.bio || ''
+        region: dbProfile.county || dbProfile.location || 'Kakamega',
+        avatarUrl: avatarUrl,
+        phoneNumber: dbProfile.phone || dbProfile.phoneNumber || session.user.user_metadata.phoneNumber || '',
+        bio: dbProfile.bio || '',
+
+        // Schema aligned fields
+        full_name: dbProfile.full_name || dbProfile.displayName || '',
+        username: dbProfile.username || '',
+        phone: dbProfile.phone || dbProfile.phoneNumber || '',
+        county: dbProfile.county || dbProfile.location || 'Kakamega',
+        sub_county: dbProfile.sub_county || '',
+        ward: dbProfile.ward || '',
+        avatar_path: dbProfile.avatar_path || '',
+        avatar_updated_at: dbProfile.avatar_updated_at || null,
+        created_at: dbProfile.created_at || null,
+        updated_at: dbProfile.updated_at || dbProfile.updatedAt || null
       };
     } catch (err) {
       console.error('Failed to retrieve profile from Supabase:', err);
@@ -73,13 +98,28 @@ export class SupabaseProfileRepository implements UserProfileRepository {
         }
       });
 
+      let avatarPath = null;
+      if (updates.avatarUrl) {
+        if (updates.avatarUrl.includes('/profile-images/')) {
+          const parts = updates.avatarUrl.split('/profile-images/');
+          if (parts[1]) {
+            avatarPath = `profile-images/${parts[1].split('?')[0]}`;
+          }
+        }
+      }
+
       // Sync with farmer_profiles table
       const { data: dbProfile, error } = await supabase
         .from('farmer_profiles')
         .upsert({
           id: id,
+          full_name: updates.name,
           displayName: updates.name,
           avatarUrl: updates.avatarUrl,
+          avatar_path: avatarPath,
+          phone: updates.phoneNumber,
+          phoneNumber: updates.phoneNumber,
+          county: updates.region,
           location: updates.region,
           bio: updates.bio || '',
           updatedAt: new Date().toISOString()
@@ -91,15 +131,40 @@ export class SupabaseProfileRepository implements UserProfileRepository {
         throw error;
       }
 
+      let avatarUrl = dbProfile.avatarUrl;
+      if (dbProfile.avatar_path) {
+        const parts = dbProfile.avatar_path.split('/');
+        const bucket = parts[0];
+        const filePath = parts.slice(1).join('/');
+        const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+        avatarUrl = data.publicUrl;
+      }
+
+      if (!avatarUrl) {
+        avatarUrl = dbProfile.avatarUrl || updates.avatarUrl || '';
+      }
+
       return {
         id: id,
-        name: dbProfile.displayName || updates.name || '',
+        name: dbProfile.full_name || dbProfile.displayName || updates.name || '',
         email: session.user.email || '',
         role: updates.role || 'farmer',
-        region: dbProfile.location || updates.region || '',
-        avatarUrl: dbProfile.avatarUrl || updates.avatarUrl || '',
-        phoneNumber: updates.phoneNumber || '',
-        bio: dbProfile.bio || ''
+        region: dbProfile.county || dbProfile.location || updates.region || '',
+        avatarUrl: avatarUrl,
+        phoneNumber: dbProfile.phone || dbProfile.phoneNumber || updates.phoneNumber || '',
+        bio: dbProfile.bio || '',
+
+        // Schema aligned fields
+        full_name: dbProfile.full_name || dbProfile.displayName || '',
+        username: dbProfile.username || '',
+        phone: dbProfile.phone || dbProfile.phoneNumber || '',
+        county: dbProfile.county || dbProfile.location || 'Kakamega',
+        sub_county: dbProfile.sub_county || '',
+        ward: dbProfile.ward || '',
+        avatar_path: dbProfile.avatar_path || '',
+        avatar_updated_at: dbProfile.avatar_updated_at || null,
+        created_at: dbProfile.created_at || null,
+        updated_at: dbProfile.updated_at || dbProfile.updatedAt || null
       };
     } catch (err) {
       console.error('Failed to update Supabase profile:', err);
@@ -110,11 +175,10 @@ export class SupabaseProfileRepository implements UserProfileRepository {
   async uploadAvatar(file: File, userId: string): Promise<string> {
     try {
       const fileExt = file.name.split('.').pop() || 'png';
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const filePath = `${userId}/avatar.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('profile-images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true
@@ -125,7 +189,7 @@ export class SupabaseProfileRepository implements UserProfileRepository {
       }
 
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
+        .from('profile-images')
         .getPublicUrl(filePath);
 
       // Append cache buster to bypass caching on subsequent updates

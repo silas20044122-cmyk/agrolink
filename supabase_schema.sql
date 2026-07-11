@@ -14,6 +14,20 @@ DROP TABLE IF EXISTS farmer_profiles CASCADE;
 -- 1. Farmer Profiles (Extends Auth)
 CREATE TABLE farmer_profiles (
     id UUID PRIMARY KEY, -- Same as auth.uid()
+    email TEXT UNIQUE,
+    full_name TEXT,
+    username TEXT,
+    phone TEXT,
+    county TEXT,
+    sub_county TEXT,
+    ward TEXT,
+    bio TEXT,
+    avatar_path TEXT,
+    avatar_updated_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+    -- Legacy & backward-compatibility fields
     "displayName" TEXT,
     "avatarUrl" TEXT,
     "location" TEXT,
@@ -21,7 +35,6 @@ CREATE TABLE farmer_profiles (
     "cropsGrown" TEXT[] DEFAULT '{}',
     "reputationScore" INTEGER DEFAULT 0,
     "contributionsCount" INTEGER DEFAULT 0,
-    "bio" TEXT,
     "updatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -334,3 +347,98 @@ VALUES
 ('00000000-0000-0000-0000-000000000002', 'Tomato prices are peaking at Nairobi Market (Wakulima). KES 4500 per crate today!', 'Market Trends', 45, 8, true),
 ('00000000-0000-0000-0000-000000000003', 'Best fertilizer for late-stage maize in Kakamega? Thinking of using CAN but open to suggestions.', 'Fertilizers', 24, 12, false)
 ON CONFLICT DO NOTHING;
+
+-- ====================================================
+-- SUPABASE STORAGE & ROW-LEVEL SECURITY POLICIES
+-- ====================================================
+
+-- Ensure the storage bucket exists and is public
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('profile-images', 'profile-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('crop-images', 'crop-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Drop existing storage policies if any to prevent conflicts
+DROP POLICY IF EXISTS "Profile images are public viewable" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload their own profile image" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own profile image" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own profile image" ON storage.objects;
+
+-- Create Storage Policies for profile-images
+CREATE POLICY "Profile images are public viewable" ON storage.objects 
+FOR SELECT USING (bucket_id = 'profile-images');
+
+CREATE POLICY "Users can upload their own profile image" ON storage.objects 
+FOR INSERT TO authenticated 
+WITH CHECK (bucket_id = 'profile-images' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "Users can update their own profile image" ON storage.objects 
+FOR UPDATE TO authenticated 
+USING (bucket_id = 'profile-images' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "Users can delete their own profile image" ON storage.objects 
+FOR DELETE TO authenticated 
+USING (bucket_id = 'profile-images' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Drop existing table policies to ensure correctness
+DROP POLICY IF EXISTS "Profiles viewable by all" ON farmer_profiles;
+DROP POLICY IF EXISTS "Users can manage own profile" ON farmer_profiles;
+
+-- Create Row Level Security policies for farmer_profiles
+CREATE POLICY "Profiles viewable by all" ON farmer_profiles 
+FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage own profile" ON farmer_profiles 
+FOR ALL USING (auth.uid() = id);
+
+-- Schema Migration Helper (for live environments where tables already exist)
+DO $$
+BEGIN
+    -- Ensure farmer_profiles has all necessary new columns
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'email') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN email TEXT UNIQUE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'full_name') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN full_name TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'username') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN username TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'phone') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN phone TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'county') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN county TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'sub_county') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN sub_county TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'ward') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN ward TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'avatar_path') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN avatar_path TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'avatar_updated_at') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN avatar_updated_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'created_at') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farmer_profiles' AND column_name = 'updated_at') THEN
+        ALTER TABLE farmer_profiles ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    END IF;
+END $$;

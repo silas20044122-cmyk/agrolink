@@ -6,6 +6,46 @@ import { analyzeCropDisease } from '@/src/services/geminiService';
 import { cn } from '@/src/lib/utils';
 import { useNotifications } from '@/src/contexts/NotificationContext';
 
+const compressImage = (base64Str: string, maxWidth = 1000, maxHeight = 1000): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(base64Str);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.75);
+      resolve(compressedDataUrl);
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+  });
+};
+
 export default function Scanner() {
   const { addNotification } = useNotifications();
   const [images, setImages] = useState<string[]>([]);
@@ -20,22 +60,23 @@ export default function Scanner() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const newImages: string[] = [];
-      let loadedCount = 0;
       const fileList = Array.from(files);
-      
-      fileList.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newImages.push(reader.result as string);
-          loadedCount++;
-          if (loadedCount === fileList.length) {
-            setImages((prev) => [...prev, ...newImages]);
-            setResult(null);
-            setError(null);
-          }
-        };
-        reader.readAsDataURL(file);
+      const promises = fileList.map((file) => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const rawBase64 = reader.result as string;
+            const compressed = await compressImage(rawBase64);
+            resolve(compressed);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(promises).then((newImages) => {
+        setImages((prev) => [...prev, ...newImages]);
+        setResult(null);
+        setError(null);
       });
     }
   };
@@ -55,24 +96,25 @@ export default function Scanner() {
     
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      const newImages: string[] = [];
-      let loadedCount = 0;
       const fileList = Array.from(files).filter(file => file.type.startsWith("image/"));
-      
       if (fileList.length === 0) return;
 
-      fileList.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newImages.push(reader.result as string);
-          loadedCount++;
-          if (loadedCount === fileList.length) {
-            setImages((prev) => [...prev, ...newImages]);
-            setResult(null);
-            setError(null);
-          }
-        };
-        reader.readAsDataURL(file);
+      const promises = fileList.map((file) => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const rawBase64 = reader.result as string;
+            const compressed = await compressImage(rawBase64);
+            resolve(compressed);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(promises).then((newImages) => {
+        setImages((prev) => [...prev, ...newImages]);
+        setResult(null);
+        setError(null);
       });
     }
   };
@@ -92,11 +134,25 @@ export default function Scanner() {
   const capturePhoto = () => {
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
+      let width = videoRef.current.videoWidth;
+      let height = videoRef.current.videoHeight;
+      const maxDim = 1000;
+      if (width > height) {
+        if (width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        }
+      } else {
+        if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d');
-      ctx?.drawImage(videoRef.current, 0, 0);
-      const data = canvas.toDataURL('image/jpeg');
+      ctx?.drawImage(videoRef.current, 0, 0, width, height);
+      const data = canvas.toDataURL('image/jpeg', 0.75);
       setImages((prev) => [...prev, data]);
       setResult(null);
       setError(null);

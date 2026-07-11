@@ -10,6 +10,18 @@ export interface UserProfile {
   avatarUrl?: string;
   phoneNumber?: string;
   bio?: string;
+
+  // Exact Supabase Database fields
+  full_name?: string;
+  username?: string;
+  phone?: string;
+  county?: string;
+  sub_county?: string;
+  ward?: string;
+  avatar_path?: string;
+  avatar_updated_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface Farm {

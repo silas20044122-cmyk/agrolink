@@ -1408,7 +1408,11 @@ export default function Settings() {
                                   onClick={async () => {
                                     if (window.confirm('Delete your custom profile photo and revert to a digital seed avatar?')) {
                                       try {
-                                        const res = await fetch('/api/settings/delete-profile-picture', { method: 'POST' });
+                                        const res = await fetch('/api/settings/delete-profile-picture', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ userId: user?.id })
+                                        });
                                         const data = await res.json();
                                         if (data.success) {
                                           setCustomAvatarData('');

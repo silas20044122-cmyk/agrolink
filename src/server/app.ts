@@ -124,56 +124,61 @@ app.post("/api/settings/2fa/disable", (req, res) => {
   return res.json({ success: true, message: "Two-Factor authentication has been deactivated." });
 });
 
-import fs from "fs";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+import crypto from "crypto";
 
-// Define directories & filesystem database file
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
-const DB_PATH = path.join(process.cwd(), "mock_db.json");
+dotenv.config();
 
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+function getSupabaseClient() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables in Settings.");
+  }
+  return supabase;
 }
 
-// Serve uploaded profile pictures statically over HTTP
-app.use("/uploads", express.static(UPLOADS_DIR));
-
-// Read from database file or fallback to default
-function readProfilesDb(): Record<string, any> {
-  try {
-    if (fs.existsSync(DB_PATH)) {
-      return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+function mapDbProfileToUserProfile(row: any): any {
+  if (!row) return null;
+  
+  let avatarUrl = row.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${row.id}`;
+  if (row.avatar_path) {
+    const parts = row.avatar_path.split('/');
+    const bucket = parts[0];
+    const path = parts.slice(1).join('/');
+    
+    if (supabaseUrl) {
+      avatarUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
     }
-  } catch (err) {
-    console.error("Error reading profiles database file:", err);
   }
   
-  // Default fallback profiles
   return {
-    "silas20044122@gmail.com": {
-      id: "mock-farmer-id",
-      name: "Silas Omulama",
-      email: "silas20044122@gmail.com",
-      role: "farmer",
-      region: "Kakamega",
-      phoneNumber: "+254 712 345 678",
-      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=silas",
-      bio: "Dedicated farmer from Kakamega county focusing on maize and organic farming."
-    }
+    id: row.id,
+    name: row.full_name || row.displayName || row.email?.split('@')[0] || 'Farmer',
+    email: row.email || '',
+    role: row.role || 'farmer',
+    region: row.county || row.location || 'Kakamega',
+    farmSize: row.farmSize || '',
+    avatarUrl: avatarUrl,
+    phoneNumber: row.phone || row.phoneNumber || '',
+    bio: row.bio || '',
+    username: row.username || '',
+    county: row.county || row.location || 'Kakamega',
+    sub_county: row.sub_county || '',
+    ward: row.ward || '',
+    avatar_path: row.avatar_path || '',
+    avatar_updated_at: row.avatar_updated_at || null,
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null
   };
 }
 
-// Write updates to database file
-function writeProfilesDb(db: Record<string, any>) {
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf8");
-  } catch (err) {
-    console.error("Error writing profiles database file:", err);
-  }
-}
-
 // Upload Profile Picture Endpoint
-app.post("/api/settings/upload-profile-picture", (req, res) => {
+app.post("/api/settings/upload-profile-picture", async (req, res) => {
   const { imageBase64, userId } = req.body;
   if (!imageBase64) {
     return res.status(400).json({ success: false, message: "Profile photo byte stream data is missing." });
@@ -187,40 +192,126 @@ app.post("/api/settings/upload-profile-picture", (req, res) => {
       return res.status(400).json({ success: false, message: "Payload size limits violated (Maximum allowable is 5MB)." });
     }
 
-    let base64Data = imageBase64;
-    let extension = "png";
-
     // Extract mime type and base64 data correctly
-    const matches = imageBase64.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
-    if (matches && matches.length === 3) {
-      extension = matches[1];
-      base64Data = matches[2];
+    const matches = imageBase64.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ success: false, message: "Invalid image format. Expected a base64 encoded data URI." });
     }
 
-    // Generate safe, distinct filename
-    const filename = `avatar-${userId || "farmer"}-${Date.now()}.${extension}`;
-    const filepath = path.join(UPLOADS_DIR, filename);
+    const contentType = matches[1];
+    const base64Data = matches[2];
 
-    // Save image to disk
-    fs.writeFileSync(filepath, Buffer.from(base64Data, "base64"));
+    // Strict validation of allowed MIME types
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    if (!allowedMimeTypes.includes(contentType)) {
+      return res.status(400).json({ success: false, message: "Invalid file format. Only JPEG, PNG, and WebP images are allowed." });
+    }
 
-    // Publicly accessible URL on this Express server
-    const publicUrl = `/uploads/${filename}`;
+    // Determine clean file extension
+    let extension = "png";
+    if (contentType === "image/jpeg" || contentType === "image/jpg") {
+      extension = "jpg";
+    } else if (contentType === "image/webp") {
+      extension = "webp";
+    }
+
+    const buffer = Buffer.from(base64Data, "base64");
+    
+    const supabaseClient = getSupabaseClient();
+    const safeUserId = userId || "farmer";
+    
+    // Upload into: profile-images/{userId}/avatar.ext
+    const fileName = `${safeUserId}/avatar.${extension}`;
+    
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('profile-images')
+      .upload(fileName, buffer, {
+        contentType,
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.error("Supabase storage upload error:", uploadError);
+      return res.status(500).json({ success: false, message: `Failed to save image to cloud storage: ${uploadError.message}` });
+    }
+
+    const avatarPathInDb = `profile-images/${fileName}`;
+    
+    // Generate public url
+    const { data: { publicUrl } } = supabaseClient.storage
+      .from('profile-images')
+      .getPublicUrl(fileName);
+
+    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+    if (safeUserId && isUuid(safeUserId)) {
+      await supabaseClient
+        .from('farmer_profiles')
+        .update({ 
+          avatar_path: avatarPathInDb, 
+          avatar_updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', safeUserId);
+    }
 
     return res.json({ 
       success: true, 
       message: "Custom profile picture saved successfully.", 
-      avatarUrl: publicUrl 
+      avatarUrl: `${publicUrl}?t=${Date.now()}`,
+      avatarPath: avatarPathInDb
     });
   } catch (err: any) {
-    console.error("Failed to write uploaded image file:", err);
+    console.error("Failed to upload image file to Supabase:", err);
     return res.status(500).json({ success: false, message: `Failed to save image: ${err?.message || "Unknown error"}` });
   }
 });
 
 // Delete Custom Profile Picture Endpoint
-app.post("/api/settings/delete-profile-picture", (req, res) => {
-  return res.json({ success: true, message: "Custom profile photo successfully deleted." });
+app.post("/api/settings/delete-profile-picture", async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+    if (userId && isUuid(userId)) {
+      const supabaseClient = getSupabaseClient();
+      
+      // Step 1: Fetch profile to get current avatar_path
+      const { data: profile } = await supabaseClient
+        .from('farmer_profiles')
+        .select('avatar_path')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profile && profile.avatar_path) {
+        // Strip bucket name prefix if present
+        const pathInBucket = profile.avatar_path.startsWith('profile-images/')
+          ? profile.avatar_path.substring('profile-images/'.length)
+          : profile.avatar_path;
+        
+        // Delete the object from Supabase Storage
+        const { error: deleteError } = await supabaseClient.storage
+          .from('profile-images')
+          .remove([pathInBucket]);
+
+        if (deleteError) {
+          console.error("Warning: Failed to delete storage object during avatar removal:", deleteError);
+        }
+      }
+
+      // Step 2: Set avatar_path = null in database
+      await supabaseClient
+        .from('farmer_profiles')
+        .update({ 
+          avatar_path: null, 
+          avatar_updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+    }
+    return res.json({ success: true, message: "Custom profile photo successfully deleted." });
+  } catch (err: any) {
+    console.error("Failed to delete profile picture:", err);
+    return res.status(500).json({ success: false, message: `Failed to delete image: ${err?.message || "Unknown error"}` });
+  }
 });
 
 // Switch Avatar source reference Endpoint
@@ -229,48 +320,120 @@ app.post("/api/settings/switch-avatar-source", (req, res) => {
   return res.json({ success: true, source, message: `Profile identity source set to ${source}.` });
 });
 
-app.get("/api/profile", (req, res) => {
+app.get("/api/profile", async (req, res) => {
   const { email } = req.query;
   if (!email || typeof email !== "string") {
     return res.status(400).json({ success: false, message: "Email query param is required." });
   }
   
   const normalizedEmail = email.toLowerCase().trim();
-  const db = readProfilesDb();
-  let profile = db[normalizedEmail];
   
-  if (!profile) {
-    profile = {
-      id: `mock-id-${normalizedEmail.replace(/[^a-zA-Z0-9]/g, "")}`,
-      name: normalizedEmail.split("@")[0],
-      email: normalizedEmail,
-      role: "farmer",
-      region: "Kakamega",
-      phoneNumber: "+254 712 345 678",
-      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${normalizedEmail}`,
-      bio: ""
-    };
-    db[normalizedEmail] = profile;
-    writeProfilesDb(db);
+  try {
+    const supabaseClient = getSupabaseClient();
+    const { data: dbProfile, error } = await supabaseClient
+      .from('farmer_profiles')
+      .select('*')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error fetching profile from Supabase:", error);
+      return res.status(500).json({ success: false, message: "Unable to retrieve profile from database.", error: error.message });
+    }
+    
+    if (!dbProfile) {
+      // Create a profile on the fly in Supabase if it doesn't exist
+      const newProfile = {
+        id: crypto.randomUUID(),
+        email: normalizedEmail,
+        full_name: normalizedEmail.split("@")[0],
+        displayName: normalizedEmail.split("@")[0],
+        county: "Kakamega",
+        location: "Kakamega",
+        bio: "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data: insertedProfile, error: insertError } = await supabaseClient
+        .from('farmer_profiles')
+        .insert(newProfile)
+        .select()
+        .single();
+        
+      if (insertError) {
+        console.error("Error creating profile in Supabase:", insertError);
+        return res.status(500).json({ success: false, message: "Unable to create profile in database.", error: insertError.message });
+      }
+      
+      return res.json({ success: true, profile: mapDbProfileToUserProfile(insertedProfile) });
+    }
+    
+    return res.json({ success: true, profile: mapDbProfileToUserProfile(dbProfile) });
+  } catch (err: any) {
+    console.error("Supabase profile fetch error:", err);
+    return res.status(500).json({ success: false, message: "Unable to retrieve profile.", error: err?.message || "Unknown error" });
   }
-  return res.json({ success: true, profile });
 });
 
-app.post("/api/profile", (req, res) => {
+app.post("/api/profile", async (req, res) => {
   const { profile } = req.body;
   if (!profile || !profile.email) {
     return res.status(400).json({ success: false, message: "Profile with email is required." });
   }
   
   const normalizedEmail = profile.email.toLowerCase().trim();
-  const db = readProfilesDb();
-  db[normalizedEmail] = {
-    ...db[normalizedEmail],
-    ...profile,
-    updatedAt: new Date().toISOString()
-  };
-  writeProfilesDb(db);
-  return res.json({ success: true, profile: db[normalizedEmail] });
+  
+  try {
+    const supabaseClient = getSupabaseClient();
+    
+    let profileId = profile.id;
+    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+    
+    if (!profileId || !isUuid(profileId)) {
+      const { data: existing } = await supabaseClient
+        .from('farmer_profiles')
+        .select('id')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+      if (existing) {
+        profileId = existing.id;
+      } else {
+        profileId = crypto.randomUUID();
+      }
+    }
+    
+    const dbPayload = {
+      id: profileId,
+      email: normalizedEmail,
+      full_name: profile.name || profile.full_name || normalizedEmail.split("@")[0],
+      displayName: profile.name || profile.full_name || normalizedEmail.split("@")[0],
+      phone: profile.phoneNumber || profile.phone || "",
+      county: profile.region || profile.county || "Kakamega",
+      location: profile.region || profile.county || "Kakamega",
+      bio: profile.bio || "",
+      sub_county: profile.sub_county || "",
+      ward: profile.ward || "",
+      avatar_path: profile.avatar_path || "",
+      updated_at: new Date().toISOString()
+    };
+    
+    const { data: upsertedProfile, error } = await supabaseClient
+      .from('farmer_profiles')
+      .upsert(dbPayload)
+      .select()
+      .single();
+      
+    if (error) {
+      console.error("Error upserting profile to Supabase:", error);
+      return res.status(500).json({ success: false, message: "Unable to update profile.", error: error.message });
+    }
+    
+    return res.json({ success: true, profile: mapDbProfileToUserProfile(upsertedProfile) });
+  } catch (err: any) {
+    console.error("Supabase profile save error:", err);
+    return res.status(500).json({ success: false, message: "Unable to save profile.", error: err?.message || "Unknown error" });
+  }
 });
 
 // Fresh Recovery Backup codes generation Endpoint
