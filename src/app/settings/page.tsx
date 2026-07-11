@@ -914,7 +914,7 @@ export default function Settings() {
               <div className="w-10 h-10 bg-primary-fresh/10 rounded-2xl flex items-center justify-center text-primary-fresh">
                 <SettingsIcon size={22} className="animate-spin-slow" />
               </div>
-              Settings & Configurations
+              Account Settings & Configurations
             </h2>
             <p className="text-gray-400 font-medium max-w-2xl text-xs md:text-sm">
                Manage your connected farm sensors, local location county, security standards, push notification thresholds, and offline SMS fallback setups.
